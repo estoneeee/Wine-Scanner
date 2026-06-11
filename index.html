@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🍷 와인 라벨 AI 스캐너</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --wine-red:#7c1d2e;--wine-gold:#c9a84c;--wine-deep:#1a0a0f;
+  --bg:#fff;--bg2:#f8f6f2;--bg3:#f2eee8;
+  --text:#1a1a1a;--text2:#666;--text3:#999;
+  --border:#e0dbd2;--border2:#ccc;
+  --radius:10px;--radius-lg:14px;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#1a1710;--bg2:#241f18;--bg3:#2e271e;
+    --text:#f0ebe0;--text2:#a09080;--text3:#6a5a4a;
+    --border:#3a3020;--border2:#504030;
+  }
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.wrap{max-width:640px;margin:0 auto;padding:0 1rem 3rem}
+
+.hero{text-align:center;padding:2rem 0 1.25rem;border-bottom:1px solid var(--border);margin-bottom:1.5rem}
+.hero-emoji{font-size:36px;display:block;margin-bottom:0.5rem}
+.hero h1{font-size:22px;font-weight:600;letter-spacing:-0.3px}
+.hero p{font-size:14px;color:var(--text2);margin-top:5px}
+
+.tab-row{display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:1.5rem;background:var(--bg2)}
+.tab-btn{flex:1;padding:11px 0;font-size:13px;font-weight:500;border:none;background:transparent;cursor:pointer;color:var(--text2);transition:all .15s}
+.tab-btn.active{background:var(--bg);color:var(--text);box-shadow:inset 0 0 0 1px var(--border)}
+.tab-btn:not(:last-child){border-right:1px solid var(--border)}
+
+.section{display:none}.section.active{display:block}
+
+.upload-zone{border:1.5px dashed var(--border2);border-radius:var(--radius-lg);padding:2.5rem 1rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg2)}
+.upload-zone:hover{border-color:var(--wine-gold);background:var(--bg)}
+.upload-zone .uz-icon{font-size:42px;display:block;margin-bottom:0.75rem}
+.upload-zone p{font-size:14px;color:var(--text2)}
+.upload-zone small{font-size:12px;color:var(--text3);margin-top:5px;display:block}
+#file-input{display:none}
+
+.preview-box{margin-top:1rem;border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--border);position:relative;background:var(--bg2)}
+.preview-box img{width:100%;max-height:280px;object-fit:contain;display:block}
+.preview-clear{position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.6);border:none;color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;line-height:1}
+
+.warn-box{margin-top:1rem;padding:11px 14px;background:#fff8e6;border:1px solid #e8c84a;border-radius:var(--radius);font-size:13px;color:#8a6200}
+@media(prefers-color-scheme:dark){.warn-box{background:#2a2200;border-color:#6a4a00;color:#e8c060}}
+.warn-box a{color:inherit;font-weight:600}
+
+.analyze-btn{width:100%;padding:13px;font-size:15px;font-weight:600;border:none;border-radius:var(--radius);cursor:pointer;background:var(--wine-red);color:#fff;transition:opacity .15s;margin-top:0.75rem;letter-spacing:0.2px}
+.analyze-btn:hover{opacity:0.88}.analyze-btn:disabled{opacity:0.4;cursor:not-allowed}
+
+.loading{display:none;text-align:center;padding:2.5rem 1rem}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--wine-red);border-radius:50%;animation:spin 0.9s linear infinite;margin:0 auto 1rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading p{font-size:14px;color:var(--text2)}
+
+.error-box{display:none;background:#fff0f0;border:1px solid #f0b0b0;border-radius:var(--radius);padding:12px 16px;font-size:13px;color:#c00;margin-top:1rem}
+@media(prefers-color-scheme:dark){.error-box{background:#2a0000;border-color:#800;color:#f88}}
+
+.result-card{display:none;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-top:1.25rem}
+.r-header{padding:1.1rem 1.25rem;border-bottom:1px solid var(--border);background:var(--bg2)}
+.r-header-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.wine-name{font-size:19px;font-weight:700;line-height:1.3}
+.wine-producer{font-size:13px;color:var(--text2);margin-top:3px}
+.r-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.tag{font-size:11px;padding:3px 10px;border-radius:999px;font-weight:600;border:1px solid;display:inline-block}
+
+.share-btn{padding:7px 13px;font-size:12px;font-weight:500;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text2);cursor:pointer;white-space:nowrap;flex-shrink:0}
+.share-btn:hover{color:var(--text);border-color:var(--text)}
+
+.r-body{padding:1.1rem 1.25rem;background:var(--bg)}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:9px;margin-bottom:1rem}
+.info-cell{background:var(--bg2);border-radius:var(--radius);padding:10px 13px;border:1px solid var(--border)}
+.info-cell .lbl{font-size:11px;color:var(--text3);margin-bottom:3px;font-weight:500}
+.info-cell .val{font-size:14px;font-weight:600}
+
+.sec-title{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;margin:1.1rem 0 0.5rem}
+.taste-text{font-size:14px;line-height:1.75;color:var(--text)}
+.pairing-list{display:flex;flex-wrap:wrap;gap:8px}
+.pairing-item{font-size:13px;background:var(--bg2);padding:6px 12px;border-radius:var(--radius);border:1px solid var(--border);display:flex;align-items:center;gap:6px}
+.pairing-item .food-icon{font-size:16px}
+
+.summary-box{background:var(--bg2);border-radius:var(--radius);padding:13px 16px;border:1px solid var(--border);border-left:3px solid var(--wine-red);font-size:14px;line-height:1.75;font-style:italic}
+
+.rate-section{margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border)}
+.star-row{display:flex;gap:5px;margin:8px 0}
+.star{font-size:26px;cursor:pointer;color:var(--border2);transition:color .1s;-webkit-tap-highlight-color:transparent;user-select:none}
+.star.lit{color:var(--wine-gold)}
+.memo-input{width:100%;padding:10px 13px;font-size:14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text);resize:vertical;min-height:75px;font-family:inherit;margin-top:8px}
+.memo-input:focus{outline:none;border-color:var(--wine-gold)}
+.save-btn{margin-top:10px;padding:10px 22px;font-size:14px;font-weight:600;border:none;border-radius:var(--radius);background:var(--wine-gold);color:#2a1800;cursor:pointer}
+.save-btn:hover{opacity:.88}
+
+.diary-empty{text-align:center;padding:3.5rem 1rem;color:var(--text2)}
+.diary-empty .de-icon{font-size:44px;display:block;margin-bottom:0.75rem;opacity:.35}
+.diary-grid{display:flex;flex-direction:column;gap:10px}
+.diary-count{font-size:12px;color:var(--text3);margin-bottom:10px}
+.diary-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.1rem;display:flex;gap:13px;align-items:flex-start}
+.diary-thumb{width:54px;height:70px;object-fit:cover;border-radius:8px;border:1px solid var(--border);flex-shrink:0}
+.diary-thumb-ph{width:54px;height:70px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:24px}
+.diary-info{flex:1;min-width:0}
+.diary-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.diary-meta{font-size:12px;color:var(--text2);margin-top:2px}
+.diary-stars{font-size:15px;color:var(--wine-gold);margin-top:3px}
+.diary-memo{font-size:12px;color:var(--text2);margin-top:5px;line-height:1.5}
+.del-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;padding:2px;flex-shrink:0;line-height:1}
+.del-btn:hover{color:#c00}
+
+.settings-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem}
+.settings-card h3{font-size:14px;font-weight:600;margin-bottom:4px}
+.settings-card p{font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.6}
+.api-row{display:flex;gap:8px}
+.api-input{flex:1;padding:10px 13px;font-size:13px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text);font-family:monospace}
+.eye-btn{background:none;border:1px solid var(--border);border-radius:var(--radius);padding:0 12px;cursor:pointer;color:var(--text2);font-size:18px}
+.save-key-btn{margin-top:10px;padding:9px 20px;font-size:13px;font-weight:600;border:none;border-radius:var(--radius);background:var(--wine-red);color:#fff;cursor:pointer}
+.info-list{font-size:13px;color:var(--text2);line-height:2.1;padding-left:1.2rem}
+.clear-btn{display:block;margin:1.5rem auto 0;font-size:12px;color:var(--text3);background:none;border:none;cursor:pointer;text-decoration:underline}
+
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(50px);background:#1a1a1a;color:#fff;font-size:13px;padding:10px 22px;border-radius:999px;opacity:0;transition:all .3s;pointer-events:none;z-index:9999;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <span class="hero-emoji">🍷</span>
+    <h1>와인 라벨 AI 스캐너</h1>
+    <p>라벨 사진 한 장으로 소믈리에 수준의 정보를</p>
+  </div>
+
+  <div class="tab-row">
+    <button class="tab-btn active" onclick="switchTab('scan')">📷 스캔</button>
+    <button class="tab-btn" onclick="switchTab('diary')">📖 다이어리</button>
+    <button class="tab-btn" onclick="switchTab('settings')">⚙️ 설정</button>
+  </div>
+
+  <!-- 스캔 탭 -->
+  <div id="tab-scan" class="section active">
+    <div class="upload-zone" id="drop-zone"
+      onclick="document.getElementById('file-input').click()"
+      ondragover="event.preventDefault()"
+      ondrop="onDrop(event)">
+      <span class="uz-icon">📸</span>
+      <p>클릭하거나 사진을 드래그해서 올려주세요</p>
+      <small>모바일에서는 카메라로 바로 촬영 가능합니다</small>
+    </div>
+    <input type="file" id="file-input" accept="image/*" capture="environment" onchange="handleFile(this)">
+
+    <div class="preview-box" id="preview-box" style="display:none">
+      <img id="preview-img" alt="업로드된 와인 라벨">
+      <button class="preview-clear" onclick="clearImage()">✕</button>
+    </div>
+
+    <div class="warn-box" id="api-warning" style="display:none">
+      ⚠️ 먼저 <a onclick="switchTab('settings')" style="cursor:pointer">설정</a>에서 Gemini API 키를 입력해 주세요.
+    </div>
+
+    <button class="analyze-btn" id="analyze-btn" onclick="analyzeWine()" disabled>
+      ✨ AI로 와인 분석하기
+    </button>
+
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>소믈리에 AI가 라벨을 분석하고 있습니다...</p>
+    </div>
+
+    <div class="error-box" id="error-box"></div>
+
+    <div class="result-card" id="result-card">
+      <div class="r-header">
+        <div class="r-header-top">
+          <div>
+            <div class="wine-name" id="r-name">—</div>
+            <div class="wine-producer" id="r-producer">—</div>
+          </div>
+          <button class="share-btn" onclick="shareResult()">🔗 공유</button>
+        </div>
+        <div class="r-tags" id="r-tags"></div>
+      </div>
+      <div class="r-body">
+        <div class="info-grid" id="r-grid"></div>
+
+        <div class="sec-title">맛과 향</div>
+        <div class="taste-text" id="r-taste">—</div>
+
+        <div class="sec-title">음식 페어링</div>
+        <div class="pairing-list" id="r-pairing"></div>
+
+        <div class="sec-title">한줄 소개</div>
+        <div class="summary-box" id="r-summary">—</div>
+
+        <div class="rate-section">
+          <div class="sec-title" style="margin-top:0">내 평가</div>
+          <div class="star-row" id="star-row">
+            <span class="star" onclick="setStar(1)">★</span>
+            <span class="star" onclick="setStar(2)">★</span>
+            <span class="star" onclick="setStar(3)">★</span>
+            <span class="star" onclick="setStar(4)">★</span>
+            <span class="star" onclick="setStar(5)">★</span>
+          </div>
+          <textarea class="memo-input" id="memo-input" placeholder="시음 메모를 남겨보세요 (선택사항)"></textarea>
+          <button class="save-btn" onclick="saveDiary()">🔖 다이어리에 저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 다이어리 탭 -->
+  <div id="tab-diary" class="section">
+    <div id="diary-content"></div>
+  </div>
+
+  <!-- 설정 탭 -->
+  <div id="tab-settings" class="section">
+    <div class="settings-card">
+      <h3>🔑 Gemini API 키</h3>
+      <p>
+        <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--wine-red);font-weight:600">aistudio.google.com/apikey</a>에서 무료로 발급받으세요.<br>
+        키는 이 기기 브라우저에만 저장되며 외부로 전송되지 않습니다.
+      </p>
+      <div class="api-row">
+        <input type="password" class="api-input" id="api-key-input" placeholder="AIza...로 시작하는 키">
+        <button class="eye-btn" onclick="toggleVis()" id="eye-btn">👁</button>
+      </div>
+      <button class="save-key-btn" onclick="saveApiKey()">저장</button>
+    </div>
+
+    <div class="settings-card">
+      <h3>ℹ️ 사용 안내</h3>
+      <ul class="info-list">
+        <li>무료 한도: Gemini Flash 기준 하루 <strong>1,500회</strong></li>
+        <li>이미지는 Google Gemini API로 전송되어 분석됩니다</li>
+        <li>다이어리 데이터는 이 기기의 브라우저에만 저장됩니다</li>
+        <li>인식이 안 되면 라벨 정면이 잘 보이게 다시 촬영하세요</li>
+        <li>크롬/사파리 최신 버전 권장</li>
+      </ul>
+    </div>
+
+    <button class="clear-btn" onclick="clearAll()">⚠️ 전체 데이터 초기화</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let currentRating = 0;
+let currentData = null;
+let currentB64 = null;
+
+function switchTab(t) {
+  ['scan','diary','settings'].forEach((n,i) => {
+    document.querySelectorAll('.tab-btn')[i].classList.toggle('active', n === t);
+    document.getElementById('tab-'+n).classList.toggle('active', n === t);
+  });
+  if (t === 'diary') renderDiary();
+}
+
+function onDrop(e) {
+  e.preventDefault();
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) loadImage(f);
+}
+function handleFile(inp) { if (inp.files[0]) loadImage(inp.files[0]); }
+
+function loadImage(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    currentB64 = e.target.result.split(',')[1];
+    document.getElementById('preview-img').src = e.target.result;
+    document.getElementById('preview-box').style.display = 'block';
+    document.getElementById('drop-zone').style.display = 'none';
+    checkBtn();
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearImage() {
+  currentB64 = null;
+  document.getElementById('preview-box').style.display = 'none';
+  document.getElementById('drop-zone').style.display = 'block';
+  document.getElementById('file-input').value = '';
+  document.getElementById('result-card').style.display = 'none';
+  document.getElementById('error-box').style.display = 'none';
+  checkBtn();
+}
+
+function getKey() { return localStorage.getItem('wine_key') || ''; }
+function saveApiKey() {
+  const k = document.getElementById('api-key-input').value.trim();
+  if (!k) { showToast('API 키를 입력해주세요'); return; }
+  localStorage.setItem('wine_key', k);
+  showToast('API 키가 저장되었습니다 ✓');
+  checkBtn();
+}
+function toggleVis() {
+  const inp = document.getElementById('api-key-input');
+  const btn = document.getElementById('eye-btn');
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+  else { inp.type = 'password'; btn.textContent = '👁'; }
+}
+
+function checkBtn() {
+  const hasImg = !!currentB64;
+  const hasKey = !!getKey();
+  document.getElementById('analyze-btn').disabled = !hasImg;
+  document.getElementById('api-warning').style.display = (hasImg && !hasKey) ? 'block' : 'none';
+}
+
+async function analyzeWine() {
+  const key = getKey();
+  if (!key) { switchTab('settings'); return; }
+  if (!currentB64) { showToast('이미지를 먼저 업로드해주세요'); return; }
+
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('result-card').style.display = 'none';
+  document.getElementById('error-box').style.display = 'none';
+  document.getElementById('analyze-btn').disabled = true;
+
+  const prompt = `당신은 세계 최고의 소믈리에입니다. 첨부 이미지의 와인 라벨을 분석해 아래 JSON만 반환하세요. 마크다운 없이 JSON만.
+
+{
+  "wine_name": "와인 풀네임",
+  "producer": "생산자 또는 와이너리명",
+  "vintage": "생산연도 (없으면 정보없음)",
+  "country": "생산국",
+  "region": "세부지역",
+  "grape": "포도품종",
+  "type": "레드/화이트/로제/스파클링/기타 중 하나",
+  "alcohol": "알코올 도수 (예: 13.5%)",
+  "taste": "맛과 향에 대한 2~3문장 (탄닌감, 산도, 바디감, 향 특성 포함)",
+  "food_pairing": ["음식1", "음식2", "음식3"],
+  "temperature": "추천 음용 온도 (예: 16~18°C)",
+  "price_range": "예상 가격대 원화 (예: 3~5만원)",
+  "summary": "이 와인을 처음 접하는 사람에게 한 문장 소개",
+  "error": null
+}
+
+와인 라벨이 아니거나 인식 불가 시 error 필드에 한국어로 사유, 나머지는 null.`;
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [
+            { inline_data: { mime_type: 'image/jpeg', data: currentB64 } },
+            { text: prompt }
+          ]}],
+          generationConfig: { temperature: 0.2, maxOutputTokens: 1024 }
+        })
+      }
+    );
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error?.message || 'HTTP ' + res.status);
+    }
+
+    const data = await res.json();
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const cleaned = raw.replace(/```json|```/g, '').trim();
+    const wine = JSON.parse(cleaned);
+
+    if (wine.error) {
+      showErr('인식 실패: ' + wine.error);
+      return;
+    }
+    currentData = wine;
+    renderResult(wine);
+
+  } catch(e) {
+    if (e.message?.includes('API_KEY_INVALID') || e.message?.includes('INVALID_ARGUMENT')) {
+      showErr('API 키가 올바르지 않습니다. 설정에서 키를 다시 확인해 주세요.');
+    } else if (e.message?.includes('RESOURCE_EXHAUSTED')) {
+      showErr('오늘 무료 한도(1,500회)를 초과했습니다. 내일 다시 시도해 주세요.');
+    } else {
+      showErr('분석 중 오류가 발생했습니다: ' + e.message);
+    }
+  } finally {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('analyze-btn').disabled = false;
+  }
+}
+
+function renderResult(w) {
+  document.getElementById('r-name').textContent = w.wine_name || '—';
+  document.getElementById('r-producer').textContent = w.producer || '—';
+
+  const typeColors = {
+    '레드': { color:'#7c1d2e', bg:'#7c1d2e20' },
+    '화이트': { color:'#7a5c0a', bg:'#c9a84c20' },
+    '로제': { color:'#b03060', bg:'#ff69b420' },
+    '스파클링': { color:'#1a5c8a', bg:'#87ceeb20' },
+    '기타': { color:'#555', bg:'#55555515' }
+  };
+  const tc = typeColors[w.type] || typeColors['기타'];
+  let tags = '';
+  if (w.type) tags += `<span class="tag" style="color:${tc.color};border-color:${tc.color};background:${tc.bg}">${w.type}</span>`;
+  if (w.vintage && w.vintage !== '정보없음') tags += `<span class="tag" style="color:var(--text2);border-color:var(--border2)">${w.vintage}</span>`;
+  if (w.country) tags += `<span class="tag" style="color:var(--text2);border-color:var(--border2)">📍 ${w.country}</span>`;
+  document.getElementById('r-tags').innerHTML = tags;
+
+  const cells = [
+    { lbl: '지역', val: w.region || '—', icon: '🗺️' },
+    { lbl: '품종', val: w.grape || '—', icon: '🍇' },
+    { lbl: '도수', val: w.alcohol || '—', icon: '🌡️' },
+    { lbl: '음용 온도', val: w.temperature || '—', icon: '🌡️' },
+    { lbl: '예상 가격', val: w.price_range || '—', icon: '💰' },
+  ];
+  document.getElementById('r-grid').innerHTML = cells.map(c =>
+    `<div class="info-cell"><div class="lbl">${c.icon} ${c.lbl}</div><div class="val">${c.val}</div></div>`
+  ).join('');
+
+  document.getElementById('r-taste').textContent = w.taste || '—';
+
+  const foodIcons = ['🥩','🐟','🧀','🥗','🍞','🍝','🍄','🦞'];
+  document.getElementById('r-pairing').innerHTML = (w.food_pairing || []).map((f, i) =>
+    `<div class="pairing-item"><span class="food-icon">${foodIcons[i % foodIcons.length]}</span>${f}</div>`
+  ).join('');
+
+  document.getElementById('r-summary').textContent = w.summary || '—';
+
+  currentRating = 0;
+  document.querySelectorAll('.star').forEach(s => s.classList.remove('lit'));
+  document.getElementById('memo-input').value = '';
+  document.getElementById('result-card').style.display = 'block';
+  document.getElementById('result-card').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function setStar(v) {
+  currentRating = v;
+  document.querySelectorAll('.star').forEach((s, i) => s.classList.toggle('lit', i < v));
+}
+
+function saveDiary() {
+  if (!currentData) { showToast('분석 결과가 없습니다'); return; }
+  const diary = JSON.parse(localStorage.getItem('wine_diary') || '[]');
+  diary.unshift({
+    id: Date.now(),
+    date: new Date().toLocaleDateString('ko-KR'),
+    data: currentData,
+    rating: currentRating,
+    memo: document.getElementById('memo-input').value.trim(),
+    thumb: document.getElementById('preview-img').src
+  });
+  localStorage.setItem('wine_diary', JSON.stringify(diary));
+  showToast('다이어리에 저장했습니다 🍷');
+}
+
+function renderDiary() {
+  const diary = JSON.parse(localStorage.getItem('wine_diary') || '[]');
+  const el = document.getElementById('diary-content');
+  if (!diary.length) {
+    el.innerHTML = `<div class="diary-empty"><span class="de-icon">📖</span><p style="font-size:15px;font-weight:500">아직 저장된 와인이 없습니다</p><small style="font-size:13px;margin-top:6px;display:block;color:var(--text3)">스캔 후 평가를 남기면 여기에 기록됩니다</small></div>`;
+    return;
+  }
+  el.innerHTML = `<div class="diary-count">총 ${diary.length}병 기록됨</div><div class="diary-grid">${
+    diary.map(e => `
+      <div class="diary-card">
+        <img class="diary-thumb" src="${e.thumb}" alt="${e.data.wine_name}" onerror="this.outerHTML='<div class=\\'diary-thumb-ph\\'>🍷</div>'">
+        <div class="diary-info">
+          <div class="diary-name">${e.data.wine_name || '이름 없음'}</div>
+          <div class="diary-meta">${e.data.producer || ''} · ${e.date}</div>
+          <div class="diary-stars">${'★'.repeat(e.rating || 0)}${'☆'.repeat(5 - (e.rating || 0))}</div>
+          ${e.memo ? `<div class="diary-memo">"${e.memo}"</div>` : ''}
+        </div>
+        <button class="del-btn" onclick="deleteDiary(${e.id})" title="삭제">🗑</button>
+      </div>
+    `).join('')
+  }</div>`;
+}
+
+function deleteDiary(id) {
+  if (!confirm('이 기록을 삭제할까요?')) return;
+  const diary = JSON.parse(localStorage.getItem('wine_diary') || '[]').filter(e => e.id !== id);
+  localStorage.setItem('wine_diary', JSON.stringify(diary));
+  renderDiary();
+  showToast('삭제되었습니다');
+}
+
+function shareResult() {
+  if (!currentData) return;
+  const txt = `🍷 ${currentData.wine_name}\n📍 ${currentData.country || ''} ${currentData.region || ''}\n🍇 ${currentData.grape || ''} | ${currentData.vintage || ''}\n💰 ${currentData.price_range || ''}\n\n"${currentData.summary || ''}"\n\n#와인스캐너 #AI소믈리에`;
+  if (navigator.share) {
+    navigator.share({ title: currentData.wine_name, text: txt }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(txt).then(() => showToast('클립보드에 복사했습니다'));
+  }
+}
+
+function clearAll() {
+  if (!confirm('저장된 모든 데이터(다이어리, API 키)를 삭제할까요?')) return;
+  localStorage.removeItem('wine_diary');
+  localStorage.removeItem('wine_key');
+  document.getElementById('api-key-input').value = '';
+  showToast('초기화 완료');
+}
+
+function showErr(msg) {
+  const el = document.getElementById('error-box');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+window.addEventListener('load', () => {
+  const k = getKey();
+  if (k) document.getElementById('api-key-input').value = k;
+  checkBtn();
+});
+</script>
+</body>
+</html>
