@@ -2,632 +2,1398 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>VINO — AI Wine Scanner</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>VINO</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Noto+Sans+KR:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;600&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --gold:#c9a84c;--gold2:#e8c96a;--gold-dim:#8a6a20;
-  --dark:#0d0a07;--dark2:#161209;--dark3:#1e1710;--dark4:#261f13;
-  --surface:#2a2218;--surface2:#332b1c;
-  --text:#f0e8d8;--text2:#a89070;--text3:#6a5030;
-  --border:#3a3020;--border2:#4a3c28;
-  --red:#8b1a2e;--red2:#a82035;
+  --gold:#c9a84c;--gold2:#e8c96a;--gold-dim:#8a6a20;--gold-bg:rgba(201,168,76,.1);
+  --dark:#0c0906;--dark2:#141008;--dark3:#1c160d;--dark4:#241e12;
+  --surface:#2c2416;--surface2:#342c1c;
+  --text:#f0e8d8;--text2:#b09878;--text3:#7a6040;--text4:#4a3820;
+  --border:#302818;--border2:#403420;--border3:#504228;
+  --red:#8b1a2e;--red2:#6b0f20;
   --radius:12px;--radius-lg:18px;--radius-xl:24px;
+  --safe-bottom:env(safe-area-inset-bottom,0px);
 }
-html,body{height:100%;background:var(--dark)}
-body{font-family:'Noto Sans KR',sans-serif;color:var(--text);min-height:100vh;
-  background:radial-gradient(ellipse at top,#1e1308 0%,#0d0a07 60%)}
+html,body{height:100%;background:var(--dark);overflow:hidden}
+body{font-family:'Noto Sans KR',sans-serif;color:var(--text);
+  background:radial-gradient(ellipse at top,#1a1008 0%,#0c0906 70%)}
 
-/* 상단 헤더 */
-.header{
-  text-align:center;padding:2.5rem 1rem 1.5rem;
-  border-bottom:1px solid var(--border);
+/* ── 스플래시 ── */
+#splash{position:fixed;inset:0;z-index:9999;
+  background:radial-gradient(ellipse at center,#1e1208 0%,#0c0906 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;
+  transition:opacity .7s .3s}
+#splash.hide{opacity:0;pointer-events:none}
+.sp-wine{font-size:52px;animation:spFloat 2s ease-in-out infinite;
+  filter:drop-shadow(0 0 20px rgba(201,168,76,.5));margin-bottom:1.5rem}
+@keyframes spFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.sp-logo{font-family:'Playfair Display',serif;font-size:44px;font-weight:700;
+  background:linear-gradient(135deg,#e8c96a 0%,#c9a84c 50%,#8a6a20 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:8px;
+  animation:spFade .8s ease both}
+.sp-sub{font-size:11px;color:var(--text3);letter-spacing:4px;text-transform:uppercase;
+  margin-top:10px;animation:spFade .8s .2s ease both}
+.sp-bar{width:60px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);
+  margin-top:20px;animation:spFade .8s .4s ease both}
+@keyframes spFade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* ── 앱 레이아웃 ── */
+.app{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:480px;margin:0 auto;position:relative}
+
+/* ── 헤더 ── */
+.header{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px 10px;padding-top:calc(12px + env(safe-area-inset-top,0px));
   background:linear-gradient(180deg,rgba(201,168,76,.07) 0%,transparent 100%);
-  position:relative;overflow:hidden;
-}
-.header::before{
-  content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);
-  width:300px;height:120px;
-  background:radial-gradient(ellipse,rgba(201,168,76,.15) 0%,transparent 70%);
-  pointer-events:none;
-}
-.logo-wrap{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:6px}
-.logo-icon{font-size:28px;filter:drop-shadow(0 0 8px rgba(201,168,76,.5))}
-.logo-text{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;
-  background:linear-gradient(135deg,#e8c96a,#c9a84c,#a07830);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  letter-spacing:4px}
-.logo-sub{font-size:11px;color:var(--text2);letter-spacing:3px;text-transform:uppercase;margin-top:2px}
-.gold-line{width:60px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:12px auto 0}
+  border-bottom:1px solid var(--border)}
+.h-logo{display:flex;align-items:center;gap:8px}
+.h-logo-icon{font-size:18px;filter:drop-shadow(0 0 6px rgba(201,168,76,.4))}
+.h-logo-text{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;
+  background:linear-gradient(135deg,var(--gold2),var(--gold));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:3px}
+.h-key-btn{display:flex;align-items:center;gap:5px;padding:7px 12px;
+  border:1px solid var(--border2);border-radius:999px;background:none;cursor:pointer;
+  font-size:12px;color:var(--text3);font-family:'Noto Sans KR',sans-serif;transition:all .2s}
+.h-key-btn.ok{color:var(--gold);border-color:var(--gold-dim)}
+.h-key-dot{width:6px;height:6px;border-radius:50%;background:var(--text4);flex-shrink:0;transition:background .2s}
+.h-key-btn.ok .h-key-dot{background:var(--gold);box-shadow:0 0 6px var(--gold)}
 
-/* 탭 */
-.tab-row{display:flex;margin:1.25rem 1rem;border:1px solid var(--border2);border-radius:var(--radius);overflow:hidden;background:var(--dark3)}
-.tab-btn{flex:1;padding:12px 0;font-size:13px;font-weight:500;border:none;background:transparent;cursor:pointer;color:var(--text2);transition:all .2s;letter-spacing:.5px;font-family:'Noto Sans KR',sans-serif}
-.tab-btn.active{background:linear-gradient(135deg,var(--surface),var(--surface2));color:var(--gold);border-bottom:2px solid var(--gold)}
-.tab-btn:not(:last-child){border-right:1px solid var(--border)}
+/* ── 스크롤 영역 ── */
+.pages{flex:1;overflow:hidden;position:relative}
+.page{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;padding:0 0 calc(70px + var(--safe-bottom));
+  opacity:0;pointer-events:none;transform:translateY(8px);transition:all .22s}
+.page.active{opacity:1;pointer-events:all;transform:none}
 
-.section{display:none;padding:0 1rem 2rem}.section.active{display:block}
+/* ── 바텀 탭 ── */
+.bottom-tab{flex-shrink:0;display:flex;
+  background:var(--dark2);border-top:1px solid var(--border);
+  padding-bottom:var(--safe-bottom)}
+.bt-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:10px 0 8px;border:none;background:none;cursor:pointer;
+  color:var(--text4);transition:all .2s;position:relative;
+  font-family:'Noto Sans KR',sans-serif}
+.bt-btn.active{color:var(--gold)}
+.bt-icon{font-size:22px;transition:transform .15s}
+.bt-btn.active .bt-icon{transform:scale(1.1)}
+.bt-label{font-size:9px;font-weight:500;letter-spacing:.5px}
+.bt-badge{position:absolute;top:6px;right:calc(50% - 16px);
+  background:var(--gold-dim);color:var(--dark);font-size:9px;font-weight:700;
+  padding:1px 5px;border-radius:999px;line-height:1.5;display:none}
 
-/* 업로드 존 */
-.upload-zone{
-  border:1px dashed var(--border2);border-radius:var(--radius-xl);
-  padding:3rem 1rem;text-align:center;cursor:pointer;
-  transition:all .25s;background:var(--dark3);
-  position:relative;overflow:hidden;
-}
-.upload-zone::before{
-  content:'';position:absolute;inset:0;
-  background:radial-gradient(ellipse at center,rgba(201,168,76,.04) 0%,transparent 70%);
-  pointer-events:none;
-}
-.upload-zone:hover{border-color:var(--gold-dim);background:var(--dark4)}
-.upload-zone:active{transform:scale(.99)}
-.uz-icon{font-size:44px;display:block;margin-bottom:1rem;
-  filter:drop-shadow(0 0 12px rgba(201,168,76,.3))}
-.uz-title{font-size:15px;font-weight:500;color:var(--text);margin-bottom:6px}
-.uz-sub{font-size:12px;color:var(--text2)}
+/* ── 공통 컴포넌트 ── */
+.sec-title{font-size:10px;font-weight:600;color:var(--gold-dim);letter-spacing:1.5px;
+  text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.card{background:var(--dark3);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.primary-btn{width:100%;padding:15px;font-size:15px;font-weight:600;border:none;
+  border-radius:var(--radius-lg);cursor:pointer;font-family:'Noto Sans KR',sans-serif;
+  background:linear-gradient(135deg,#a02030,#6b0f20);color:var(--text);
+  box-shadow:0 4px 20px rgba(107,15,32,.5);transition:all .2s;letter-spacing:.3px;
+  position:relative;overflow:hidden}
+.primary-btn::after{content:'';position:absolute;top:0;left:-100%;width:50%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent);
+  animation:btnShine 3s infinite}
+@keyframes btnShine{to{left:150%}}
+.primary-btn:active{transform:scale(.98);opacity:.9}
+.primary-btn:disabled{opacity:.3;cursor:not-allowed}
+.primary-btn:disabled::after{display:none}
+.ghost-btn{padding:10px 16px;font-size:13px;font-weight:500;border:1px solid var(--border2);
+  border-radius:var(--radius);background:none;color:var(--text2);cursor:pointer;
+  font-family:'Noto Sans KR',sans-serif;transition:all .2s}
+.ghost-btn:active{background:var(--border);color:var(--text)}
+.gold-btn{padding:13px;font-size:14px;font-weight:600;border:none;
+  border-radius:var(--radius-lg);cursor:pointer;font-family:'Noto Sans KR',sans-serif;
+  background:linear-gradient(135deg,var(--gold),var(--gold-dim));color:var(--dark);
+  box-shadow:0 4px 16px rgba(201,168,76,.2);transition:all .2s}
+.gold-btn:active{transform:scale(.98)}
+.tag{display:inline-block;font-size:11px;padding:3px 10px;border-radius:999px;
+  font-weight:500;border:1px solid;letter-spacing:.2px}
+.divider{height:1px;background:var(--border);margin:0}
+.loading-spin{display:inline-block;width:20px;height:20px;
+  border:2px solid var(--border2);border-top-color:var(--gold);
+  border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ────────────────────────────
+   PAGE 1 — 스캔
+──────────────────────────── */
+#pg-scan{padding-bottom:calc(80px + var(--safe-bottom))}
+.scan-inner{padding:16px}
+
+.upload-zone{border:1.5px dashed var(--border3);border-radius:var(--radius-xl);
+  padding:2.5rem 1rem;text-align:center;cursor:pointer;
+  background:var(--dark3);transition:all .2s;position:relative;overflow:hidden}
+.upload-zone::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 0%,rgba(201,168,76,.05),transparent 60%);pointer-events:none}
+.upload-zone:active{transform:scale(.99);border-color:var(--gold-dim)}
+.uz-icon{font-size:42px;display:block;margin-bottom:.75rem;
+  filter:drop-shadow(0 0 10px rgba(201,168,76,.25))}
+.uz-t{font-size:14px;font-weight:500;color:var(--text2);margin-bottom:4px}
+.uz-s{font-size:12px;color:var(--text3)}
 #file-input{display:none}
 
-/* 프리뷰 */
-.preview-box{
-  margin-top:1rem;border-radius:var(--radius-lg);overflow:hidden;
-  border:1px solid var(--border2);position:relative;
-  background:var(--dark3);
-  box-shadow:0 8px 32px rgba(0,0,0,.5);
-}
-.preview-box img{width:100%;max-height:300px;object-fit:contain;display:block}
-.preview-clear{
-  position:absolute;top:10px;right:10px;
-  background:rgba(0,0,0,.7);border:1px solid var(--border2);
-  color:var(--text2);width:32px;height:32px;border-radius:50%;
-  cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;
-  backdrop-filter:blur(4px);
-}
+.preview-wrap{margin-bottom:12px;border-radius:var(--radius-lg);overflow:hidden;
+  border:1px solid var(--border2);background:var(--dark3);position:relative}
+.preview-wrap img{width:100%;max-height:260px;object-fit:contain;display:block}
+.preview-x{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;
+  background:rgba(0,0,0,.7);border:none;color:var(--text2);font-size:14px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
 
-/* 경고 박스 */
-.warn-box{
-  margin-top:1rem;padding:12px 16px;
-  background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);
-  border-radius:var(--radius);font-size:13px;color:var(--gold);
-}
-.warn-box a{color:var(--gold);font-weight:600;cursor:pointer;text-decoration:underline}
-
-/* 분석 버튼 */
-.analyze-btn{
-  width:100%;padding:15px;font-size:15px;font-weight:600;
-  border:none;border-radius:var(--radius);cursor:pointer;
-  background:linear-gradient(135deg,#8b1a2e,#6b0f20);
-  color:var(--text);margin-top:1rem;
-  position:relative;overflow:hidden;transition:all .2s;
-  letter-spacing:1px;font-family:'Noto Sans KR',sans-serif;
-  box-shadow:0 4px 20px rgba(139,26,46,.4);
-}
-.analyze-btn::before{
-  content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);
-  transition:left .4s;
-}
-.analyze-btn:hover::before{left:100%}
-.analyze-btn:hover{box-shadow:0 6px 28px rgba(139,26,46,.6);transform:translateY(-1px)}
-.analyze-btn:active{transform:translateY(0)}
-.analyze-btn:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none}
-
-/* 로딩 */
-.loading{display:none;text-align:center;padding:3rem 1rem}
-.wine-glass-loader{font-size:42px;display:block;animation:float 1.5s ease-in-out infinite;margin-bottom:1rem;filter:drop-shadow(0 0 10px rgba(201,168,76,.4))}
-@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-.loading p{font-size:13px;color:var(--text2);letter-spacing:1px}
-
-/* 오류 */
-.error-box{
-  display:none;background:rgba(139,26,46,.15);
-  border:1px solid rgba(139,26,46,.3);border-radius:var(--radius);
-  padding:13px 16px;font-size:13px;color:#f08080;margin-top:1rem;
-}
+.err-box{display:none;background:rgba(139,26,46,.12);border:1px solid rgba(139,26,46,.25);
+  border-radius:var(--radius);padding:12px 14px;font-size:13px;color:#f09090;
+  margin-bottom:12px;line-height:1.6}
+.loading-box{display:none;text-align:center;padding:2rem;margin-bottom:12px}
+.loading-wine{font-size:36px;animation:pulse 1.2s ease-in-out infinite;display:block;margin-bottom:.5rem}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+.loading-box p{font-size:13px;color:var(--text2)}
 
 /* 결과 카드 */
-.result-card{
-  display:none;margin-top:1.25rem;
-  border:1px solid var(--border2);border-radius:var(--radius-xl);
-  overflow:hidden;
-  box-shadow:0 12px 40px rgba(0,0,0,.6);
-}
+.result-wrap{display:none}
+.r-hero{background:linear-gradient(160deg,var(--surface),var(--dark4));
+  padding:16px;border-bottom:1px solid var(--border2);position:relative;overflow:hidden}
+.r-hero::before{content:'🍷';position:absolute;right:-8px;top:-8px;
+  font-size:72px;opacity:.04;pointer-events:none}
+.r-top-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
+.r-name{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;
+  background:linear-gradient(135deg,var(--text),#d0b888);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.3}
+.r-producer{font-size:12px;color:var(--text3);margin-top:3px}
+.r-score{text-align:center;background:var(--gold-bg);border:1px solid var(--gold-dim);
+  border-radius:var(--radius);padding:8px 12px;flex-shrink:0}
+.r-score-n{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--gold);display:block}
+.r-score-l{font-size:9px;color:var(--text3);letter-spacing:.5px;text-transform:uppercase}
+.r-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+.r-act-row{display:flex;gap:6px}
+.r-act{flex:1;padding:9px 0;font-size:11px;font-weight:500;border:1px solid var(--border2);
+  border-radius:var(--radius);background:rgba(255,255,255,.03);color:var(--text2);
+  cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .15s}
+.r-act:active{background:var(--gold-bg);color:var(--gold);border-color:var(--gold-dim)}
 
-/* 결과 헤더 */
-.r-header{
-  padding:1.5rem 1.25rem;
-  background:linear-gradient(135deg,var(--surface),var(--dark4));
-  border-bottom:1px solid var(--border2);
-  position:relative;overflow:hidden;
-}
-.r-header::after{
-  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,transparent,var(--gold-dim),transparent);
-}
-.r-header-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.wine-name{
-  font-family:'Playfair Display',serif;
-  font-size:20px;font-weight:700;line-height:1.3;
-  background:linear-gradient(135deg,var(--text),#d4c0a0);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-}
-.wine-producer{font-size:12px;color:var(--text2);margin-top:4px;letter-spacing:.5px}
-.r-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
-.tag{
-  font-size:11px;padding:4px 11px;border-radius:999px;
-  font-weight:500;border:1px solid;letter-spacing:.3px;
-}
+/* 결과 내부 탭 */
+.r-itabs{display:flex;background:var(--dark2);border-bottom:1px solid var(--border);overflow-x:auto;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none}
+.r-itabs::-webkit-scrollbar{display:none}
+.r-itab{flex-shrink:0;padding:11px 14px;font-size:12px;font-weight:500;border:none;
+  background:none;color:var(--text3);cursor:pointer;font-family:'Noto Sans KR',sans-serif;
+  border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
+.r-itab.active{color:var(--gold);border-bottom-color:var(--gold)}
 
-/* 공유 버튼 */
-.share-btn{
-  padding:8px 14px;font-size:12px;font-weight:500;
-  border:1px solid var(--border2);border-radius:var(--radius);
-  background:rgba(255,255,255,.04);color:var(--text2);cursor:pointer;
-  white-space:nowrap;flex-shrink:0;transition:all .15s;
-  font-family:'Noto Sans KR',sans-serif;
-}
-.share-btn:hover{color:var(--gold);border-color:var(--gold-dim)}
+.r-panel{display:none;padding:16px}.r-panel.active{display:block}
 
-/* 결과 본문 */
-.r-body{padding:1.25rem;background:var(--dark2)}
-.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:1.25rem}
-.info-cell{
-  background:var(--dark3);border-radius:var(--radius);
-  padding:12px 14px;border:1px solid var(--border);
-  transition:border-color .15s;
-}
-.info-cell:hover{border-color:var(--border2)}
-.info-cell .lbl{font-size:10px;color:var(--text3);margin-bottom:4px;letter-spacing:.8px;text-transform:uppercase}
-.info-cell .val{font-size:14px;font-weight:500;color:var(--text)}
+/* 정보 그리드 */
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.ic{background:var(--dark4);border-radius:var(--radius);padding:10px 12px;border:1px solid var(--border)}
+.ic-l{font-size:10px;color:var(--text3);margin-bottom:3px;letter-spacing:.6px;text-transform:uppercase}
+.ic-v{font-size:13px;font-weight:500;color:var(--text)}
+.ic.span2{grid-column:span 2}
 
-.sec-title{
-  font-size:10px;font-weight:600;color:var(--gold-dim);
-  letter-spacing:1.5px;text-transform:uppercase;margin:1.25rem 0 0.6rem;
-  display:flex;align-items:center;gap:8px;
-}
-.sec-title::after{content:'';flex:1;height:1px;background:var(--border)}
+/* 게이지 */
+.gauge-list{display:flex;flex-direction:column;gap:10px}
+.gauge-row{display:flex;align-items:center;gap:10px}
+.gauge-l{font-size:12px;color:var(--text2);width:44px;flex-shrink:0}
+.gauge-track{flex:1;height:6px;background:var(--border);border-radius:999px;overflow:hidden}
+.gauge-fill{height:100%;border-radius:999px;
+  background:linear-gradient(90deg,var(--gold-dim),var(--gold));width:0;transition:width 1s ease}
+.gauge-v{font-size:11px;color:var(--text3);width:24px;text-align:right}
 
-.taste-text{font-size:14px;line-height:1.85;color:var(--text2)}
-.pairing-list{display:flex;flex-wrap:wrap;gap:8px}
-.pairing-item{
-  font-size:13px;background:var(--dark3);padding:8px 14px;
-  border-radius:var(--radius);border:1px solid var(--border);
-  display:flex;align-items:center;gap:7px;color:var(--text);
-}
-.food-icon{font-size:16px}
+/* 노트 */
+.expert-box{background:linear-gradient(135deg,var(--dark3),var(--dark4));
+  border-left:2px solid var(--gold-dim);border-radius:var(--radius);padding:14px;
+  font-size:13px;line-height:1.85;color:var(--text2);margin-bottom:10px}
+.expert-label{font-size:10px;color:var(--gold-dim);letter-spacing:1px;text-transform:uppercase;
+  font-weight:600;margin-bottom:6px}
+.beginner-box{background:rgba(45,106,79,.07);border:1px solid rgba(45,106,79,.2);
+  border-radius:var(--radius);padding:14px;font-size:13px;line-height:1.85;color:#90c4a8}
+.beginner-label{font-size:10px;color:#5a9478;letter-spacing:1px;text-transform:uppercase;
+  font-weight:600;margin-bottom:6px}
 
-.summary-box{
-  background:linear-gradient(135deg,var(--dark3),var(--dark4));
-  border-radius:var(--radius);padding:15px 18px;
-  border:1px solid var(--border2);border-left:2px solid var(--gold-dim);
-  font-size:14px;line-height:1.85;color:var(--text2);font-style:italic;
-  position:relative;
-}
+/* 페어링 */
+.pairing-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.pair-item{background:var(--dark4);border:1px solid var(--border);border-radius:var(--radius);
+  padding:10px;display:flex;flex-direction:column;gap:4px}
+.pair-icon{font-size:22px}
+.pair-food{font-size:12px;font-weight:500;color:var(--text)}
+.pair-reason{font-size:11px;color:var(--text3);line-height:1.4}
 
-/* 평가 섹션 */
-.rate-section{margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border)}
-.star-row{display:flex;gap:6px;margin:10px 0}
-.star{
-  font-size:28px;cursor:pointer;color:var(--border2);
-  transition:all .15s;-webkit-tap-highlight-color:transparent;user-select:none;
-}
+/* 추천 리스트 */
+.rec-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.rec-item{background:var(--dark4);border:1px solid var(--border);border-radius:var(--radius);
+  padding:12px 14px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.rec-name{font-size:13px;font-weight:500;color:var(--text)}
+.rec-sub{font-size:11px;color:var(--text3);margin-top:3px;line-height:1.5}
+.rec-price{font-size:12px;color:var(--gold);flex-shrink:0;font-weight:500}
+
+/* 평가 */
+.rate-box{padding:16px;background:var(--dark2);border-top:1px solid var(--border)}
+.star-row{display:flex;gap:6px;margin:8px 0 12px}
+.star{font-size:28px;cursor:pointer;color:var(--border2);transition:all .15s;user-select:none}
 .star.lit{color:var(--gold);filter:drop-shadow(0 0 4px rgba(201,168,76,.5))}
-.star:hover{transform:scale(1.15)}
-.memo-input{
-  width:100%;padding:12px 14px;font-size:14px;
-  border:1px solid var(--border);border-radius:var(--radius);
-  background:var(--dark3);color:var(--text);
-  resize:vertical;min-height:80px;font-family:'Noto Sans KR',sans-serif;
-  margin-top:8px;transition:border-color .15s;
-}
-.memo-input:focus{outline:none;border-color:var(--gold-dim)}
-.memo-input::placeholder{color:var(--text3)}
-.save-btn{
-  margin-top:10px;padding:12px 24px;font-size:14px;font-weight:600;
-  border:none;border-radius:var(--radius);
-  background:linear-gradient(135deg,var(--gold),var(--gold-dim));
-  color:var(--dark);cursor:pointer;transition:all .2s;
-  font-family:'Noto Sans KR',sans-serif;letter-spacing:.5px;
-  box-shadow:0 4px 16px rgba(201,168,76,.25);
-}
-.save-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(201,168,76,.4)}
+.star:active{transform:scale(1.3)}
+.star-lbl{font-size:12px;color:var(--text3);margin-left:4px;align-self:center}
+.memo-ta{width:100%;padding:11px 13px;font-size:13px;border:1px solid var(--border);
+  border-radius:var(--radius);background:var(--dark3);color:var(--text);
+  resize:none;height:72px;font-family:'Noto Sans KR',sans-serif;
+  transition:border-color .15s}
+.memo-ta:focus{outline:none;border-color:var(--gold-dim)}
+.memo-ta::placeholder{color:var(--text4)}
 
-/* 다이어리 */
-.diary-empty{text-align:center;padding:4rem 1rem;color:var(--text2)}
-.de-icon{font-size:48px;display:block;margin-bottom:1rem;opacity:.3}
-.diary-count{font-size:11px;color:var(--text3);margin-bottom:12px;letter-spacing:.5px}
-.diary-grid{display:flex;flex-direction:column;gap:10px}
-.diary-card{
-  background:var(--dark3);border:1px solid var(--border);
-  border-radius:var(--radius-lg);padding:1rem 1.1rem;
-  display:flex;gap:13px;align-items:flex-start;
-  transition:border-color .15s;
-}
-.diary-card:hover{border-color:var(--border2)}
-.diary-thumb{width:54px;height:70px;object-fit:cover;border-radius:8px;border:1px solid var(--border2);flex-shrink:0}
-.diary-thumb-ph{width:54px;height:70px;border-radius:8px;border:1px solid var(--border);background:var(--dark4);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:24px}
-.diary-info{flex:1;min-width:0}
-.diary-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
-.diary-meta{font-size:11px;color:var(--text2);margin-top:2px;letter-spacing:.3px}
-.diary-stars{font-size:14px;color:var(--gold);margin-top:4px}
-.diary-memo{font-size:12px;color:var(--text2);margin-top:5px;line-height:1.5;font-style:italic}
-.del-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;padding:2px;flex-shrink:0;line-height:1;transition:color .15s}
-.del-btn:hover{color:#e05050}
+/* ────────────────────────────
+   PAGE 2 — 검색
+──────────────────────────── */
+.search-inner{padding:16px}
+.search-bar{display:flex;gap:8px;margin-bottom:16px}
+.search-input{flex:1;padding:13px 14px;font-size:14px;
+  border:1px solid var(--border2);border-radius:var(--radius-lg);
+  background:var(--dark3);color:var(--text);font-family:'Noto Sans KR',sans-serif;
+  transition:border-color .15s}
+.search-input:focus{outline:none;border-color:var(--gold-dim)}
+.search-input::placeholder{color:var(--text3)}
+.search-btn{padding:0 18px;font-size:16px;border:none;border-radius:var(--radius-lg);
+  background:linear-gradient(135deg,var(--surface2),var(--surface));
+  color:var(--gold);cursor:pointer;border:1px solid var(--border2)}
+.search-btn:active{background:var(--gold-bg)}
 
-/* 설정 */
-.settings-card{
-  background:var(--dark3);border:1px solid var(--border);
-  border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1rem;
-}
-.settings-card h3{
-  font-size:13px;font-weight:600;color:var(--gold);
-  letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;
-}
-.settings-card p{font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.7}
-.settings-card a{color:var(--gold);font-weight:500}
-.api-row{display:flex;gap:8px}
-.api-input{
-  flex:1;padding:11px 14px;font-size:13px;
+.search-hint{text-align:center;padding:2.5rem 1rem;color:var(--text3)}
+.search-hint-icon{font-size:40px;display:block;margin-bottom:.75rem;opacity:.3}
+.search-hint p{font-size:13px;line-height:1.7}
+.search-hint small{font-size:11px;color:var(--text4);display:block;margin-top:6px}
+
+.search-result-list{display:flex;flex-direction:column;gap:10px}
+.wine-result-card{background:var(--dark3);border:1px solid var(--border);
+  border-radius:var(--radius-lg);overflow:hidden;cursor:pointer;transition:border-color .2s}
+.wine-result-card:active{border-color:var(--border2);background:var(--dark4)}
+.wrc-inner{padding:14px}
+.wrc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px}
+.wrc-name{font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:var(--text);line-height:1.3}
+.wrc-score{background:var(--gold-bg);border:1px solid var(--gold-dim);
+  border-radius:var(--radius);padding:5px 10px;text-align:center;flex-shrink:0}
+.wrc-score-n{font-family:'Playfair Display',serif;font-size:16px;color:var(--gold);font-weight:700;display:block}
+.wrc-score-l{font-size:9px;color:var(--text3)}
+.wrc-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.wrc-desc{font-size:12px;color:var(--text2);line-height:1.65}
+.wrc-bottom{display:flex;justify-content:space-between;align-items:center;
+  margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.wrc-price{font-size:13px;color:var(--gold);font-weight:500}
+.wrc-add-btn{padding:7px 14px;font-size:12px;font-weight:500;border:1px solid var(--gold-dim);
+  border-radius:999px;background:var(--gold-bg);color:var(--gold);cursor:pointer;
+  font-family:'Noto Sans KR',sans-serif}
+.wrc-add-btn:active{background:var(--gold);color:var(--dark)}
+
+/* 와인 상세 모달 */
+.detail-modal{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.85);
+  display:flex;align-items:flex-end;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .25s}
+.detail-modal.show{opacity:1;pointer-events:all}
+.detail-sheet{background:var(--dark3);border-radius:var(--radius-xl) var(--radius-xl) 0 0;
+  width:100%;max-width:480px;max-height:90vh;overflow-y:auto;
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.34,1.1,.64,1)}
+.detail-modal.show .detail-sheet{transform:none}
+.detail-handle{width:36px;height:4px;background:var(--border2);border-radius:999px;
+  margin:12px auto 0}
+.detail-header{padding:16px;border-bottom:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;
+  position:sticky;top:0;background:var(--dark3);z-index:1}
+.detail-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:600;color:var(--text)}
+.detail-close{background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;padding:2px}
+.detail-body{padding:16px;padding-bottom:calc(20px + var(--safe-bottom))}
+.detail-rate-section{margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
+
+/* ────────────────────────────
+   PAGE 3 — 메뉴 추천
+──────────────────────────── */
+.menu-inner{padding:16px}
+.menu-desc{font-size:13px;color:var(--text2);line-height:1.75;margin-bottom:16px;
+  background:var(--dark3);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px}
+.menu-ta{width:100%;padding:13px 14px;font-size:14px;
+  border:1px solid var(--border2);border-radius:var(--radius-lg);
+  background:var(--dark3);color:var(--text);font-family:'Noto Sans KR',sans-serif;
+  resize:none;height:100px;transition:border-color .15s;margin-bottom:10px}
+.menu-ta:focus{outline:none;border-color:var(--gold-dim)}
+.menu-ta::placeholder{color:var(--text3)}
+.menu-loading{display:none;text-align:center;padding:2rem}
+.menu-results{display:none}
+.menu-wine-card{background:var(--dark3);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:16px;margin-bottom:10px}
+.mwc-rank{font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;
+  margin-bottom:4px;font-weight:600}
+.mwc-name{font-family:'Playfair Display',serif;font-size:17px;font-weight:600;
+  color:var(--text);margin-bottom:4px}
+.mwc-meta{font-size:11px;color:var(--text3);margin-bottom:10px}
+.mwc-reason{font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:8px}
+.mwc-bottom{display:flex;justify-content:space-between;align-items:center}
+.mwc-price{font-size:13px;color:var(--gold);font-weight:500}
+
+/* ────────────────────────────
+   PAGE 4 — 다이어리
+──────────────────────────── */
+.diary-inner{padding:16px}
+.diary-stats-row{display:flex;gap:8px;margin-bottom:16px}
+.d-stat{flex:1;background:var(--dark3);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:12px;text-align:center}
+.d-stat-n{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;
+  color:var(--gold);display:block}
+.d-stat-l{font-size:10px;color:var(--text3);letter-spacing:.5px;margin-top:2px}
+.diary-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.diary-toolbar-l{font-size:12px;color:var(--text3)}
+.sort-sel{background:none;border:1px solid var(--border2);border-radius:var(--radius);
+  padding:6px 10px;font-size:11px;color:var(--text2);cursor:pointer;
+  font-family:'Noto Sans KR',sans-serif}
+.diary-empty{text-align:center;padding:3rem 1rem}
+.diary-empty-icon{font-size:44px;display:block;margin-bottom:.75rem;opacity:.25}
+.diary-list{display:flex;flex-direction:column;gap:10px}
+.dc{background:var(--dark3);border:1px solid var(--border);border-radius:var(--radius-lg);
+  overflow:hidden;cursor:pointer;transition:border-color .15s}
+.dc:active{border-color:var(--border2)}
+.dc-inner{display:flex;align-items:stretch}
+.dc-thumb-wrap{width:72px;flex-shrink:0;background:var(--dark4);overflow:hidden}
+.dc-thumb{width:72px;height:92px;object-fit:cover;display:block}
+.dc-thumb-ph{width:72px;height:92px;display:flex;align-items:center;justify-content:center;font-size:28px}
+.dc-info{flex:1;padding:12px;min-width:0}
+.dc-name{font-size:14px;font-weight:500;color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.dc-sub{font-size:11px;color:var(--text3);margin-bottom:6px}
+.dc-bottom{display:flex;justify-content:space-between;align-items:center}
+.dc-stars{font-size:13px;color:var(--gold)}
+.dc-date{font-size:10px;color:var(--text4)}
+.dc-memo{font-size:11px;color:var(--text3);margin-top:5px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-style:italic}
+.dc-del{padding:12px;border:none;background:none;color:var(--text4);
+  cursor:pointer;font-size:18px;flex-shrink:0;transition:color .15s}
+.dc-del:active{color:#e05050}
+
+/* ────────────────────────────
+   PAGE 5 — 설정
+──────────────────────────── */
+.settings-inner{padding:16px}
+.sg{margin-bottom:20px}
+.sg-title{font-size:10px;color:var(--text3);letter-spacing:1.5px;
+  text-transform:uppercase;margin-bottom:8px;padding:0 2px}
+.sg-card{background:var(--dark3);border:1px solid var(--border);border-radius:var(--radius-lg)}
+.sg-row{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;border-bottom:1px solid var(--border)}
+.sg-row:last-child{border-bottom:none}
+.sg-row-l{font-size:14px;color:var(--text)}
+.sg-row-s{font-size:11px;color:var(--text3);margin-top:2px}
+.status-chip{font-size:11px;padding:4px 11px;border-radius:999px;font-weight:500}
+.chip-ok{background:rgba(45,106,79,.15);color:#5ab888;border:1px solid rgba(45,106,79,.3)}
+.chip-err{background:rgba(139,26,46,.12);color:#f09090;border:1px solid rgba(139,26,46,.3)}
+.chip-info{background:var(--gold-bg);color:var(--gold);border:1px solid var(--gold-dim)}
+.api-form{padding:14px 16px;border-top:1px solid var(--border)}
+.api-row{display:flex;gap:8px;margin-bottom:8px}
+.api-inp{flex:1;padding:11px 13px;font-size:13px;
   border:1px solid var(--border2);border-radius:var(--radius);
-  background:var(--dark4);color:var(--text);font-family:monospace;
-  transition:border-color .15s;
-}
-.api-input:focus{outline:none;border-color:var(--gold-dim)}
-.api-input::placeholder{color:var(--text3)}
-.eye-btn{
-  background:var(--dark4);border:1px solid var(--border2);
-  border-radius:var(--radius);padding:0 14px;cursor:pointer;color:var(--text2);
-  font-size:16px;transition:color .15s;
-}
-.eye-btn:hover{color:var(--gold)}
-.save-key-btn{
-  margin-top:10px;padding:10px 22px;font-size:13px;font-weight:600;
-  border:none;border-radius:var(--radius);
-  background:linear-gradient(135deg,var(--red),var(--dark));
-  color:var(--text);cursor:pointer;transition:all .2s;
-  font-family:'Noto Sans KR',sans-serif;
-  box-shadow:0 3px 12px rgba(139,26,46,.3);
-}
-.save-key-btn:hover{box-shadow:0 5px 18px rgba(139,26,46,.5)}
-.info-list{font-size:13px;color:var(--text2);line-height:2.2;padding-left:1.2rem}
-.info-list li{border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:6px}
-.info-list li:last-child{border-bottom:none}
-.clear-btn{display:block;margin:1.5rem auto 0;font-size:12px;color:var(--text3);background:none;border:none;cursor:pointer;text-decoration:underline;font-family:'Noto Sans KR',sans-serif}
+  background:var(--dark4);color:var(--text);font-family:monospace;transition:border-color .15s}
+.api-inp:focus{outline:none;border-color:var(--gold-dim)}
+.api-inp::placeholder{color:var(--text4)}
+.eye-btn{background:var(--dark4);border:1px solid var(--border2);
+  border-radius:var(--radius);padding:0 13px;cursor:pointer;font-size:15px;color:var(--text3)}
+.api-help{font-size:12px;color:var(--text3);line-height:1.8;margin-top:8px}
+.api-help a{color:var(--gold);text-decoration:none}
+.backup-row{display:flex;gap:8px;padding:14px 16px}
+.backup-btn{flex:1;padding:11px;font-size:13px;font-weight:500;border-radius:var(--radius);
+  cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .15s}
+.export-btn{background:var(--dark4);border:1px solid var(--border2);color:var(--gold)}
+.export-btn:active{background:var(--gold-bg)}
+.import-btn{background:var(--dark4);border:1px solid var(--border2);color:var(--text2)}
+.import-btn:active{background:var(--border)}
+#import-file{display:none}
+.danger-btn{width:100%;padding:12px;font-size:13px;font-weight:500;
+  border:1px solid rgba(139,26,46,.3);border-radius:var(--radius);
+  background:transparent;color:#f09090;cursor:pointer;
+  font-family:'Noto Sans KR',sans-serif;transition:all .15s}
+.danger-btn:active{background:rgba(139,26,46,.1)}
+.sg-pad{padding:14px 16px}
 
-/* 토스트 */
-.toast{
-  position:fixed;bottom:30px;left:50%;
-  transform:translateX(-50%) translateY(60px);
-  background:var(--surface2);color:var(--text);
-  font-size:13px;padding:11px 24px;border-radius:999px;
-  opacity:0;transition:all .3s;pointer-events:none;z-index:9999;
-  white-space:nowrap;border:1px solid var(--border2);
-  box-shadow:0 8px 24px rgba(0,0,0,.5);
-}
+/* ── API 키 모달 ── */
+.key-modal{position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.85);
+  display:flex;align-items:flex-end;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .25s}
+.key-modal.show{opacity:1;pointer-events:all}
+.key-sheet{background:var(--dark3);border-radius:var(--radius-xl) var(--radius-xl) 0 0;
+  width:100%;max-width:480px;padding:20px 20px calc(20px + var(--safe-bottom));
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.34,1.1,.64,1)}
+.key-modal.show .key-sheet{transform:none}
+.key-modal-title{font-size:16px;font-weight:600;color:var(--text);margin-bottom:4px}
+.key-modal-sub{font-size:12px;color:var(--text3);margin-bottom:16px;line-height:1.6}
+.key-modal-sub a{color:var(--gold)}
+
+/* ── 토스트 ── */
+.toast{position:fixed;bottom:calc(75px + var(--safe-bottom));left:50%;
+  transform:translateX(-50%) translateY(10px);
+  background:var(--surface2);color:var(--text);font-size:13px;padding:10px 22px;
+  border-radius:999px;opacity:0;transition:all .3s;pointer-events:none;z-index:9999;
+  border:1px solid var(--border2);box-shadow:0 6px 20px rgba(0,0,0,.5);white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-
-@media(max-width:400px){.info-grid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div class="logo-wrap">
-    <span class="logo-icon">🍷</span>
-    <span class="logo-text">VINO</span>
-  </div>
-  <div class="logo-sub">AI Wine Sommelier</div>
-  <div class="gold-line"></div>
+<!-- 스플래시 -->
+<div id="splash">
+  <span class="sp-wine">🍷</span>
+  <div class="sp-logo">VINO</div>
+  <div class="sp-sub">AI Wine Sommelier</div>
+  <div class="sp-bar"></div>
 </div>
 
-<div class="tab-row">
-  <button class="tab-btn active" onclick="switchTab('scan')">📷 스캔</button>
-  <button class="tab-btn" onclick="switchTab('diary')">📖 다이어리</button>
-  <button class="tab-btn" onclick="switchTab('settings')">⚙️ 설정</button>
-</div>
-
-<!-- 스캔 탭 -->
-<div id="tab-scan" class="section active">
-  <div class="upload-zone" id="drop-zone"
-    onclick="document.getElementById('file-input').click()"
-    ondragover="event.preventDefault()"
-    ondrop="onDrop(event)">
-    <span class="uz-icon">📸</span>
-    <div class="uz-title">라벨을 촬영하거나 사진을 올려주세요</div>
-    <div class="uz-sub">카메라 촬영 · 갤러리 선택 · 드래그앤드롭</div>
-  </div>
-  <input type="file" id="file-input" accept="image/*" capture="environment" onchange="handleFile(this)">
-
-  <div class="preview-box" id="preview-box" style="display:none">
-    <img id="preview-img" alt="와인 라벨">
-    <button class="preview-clear" onclick="clearImage()">✕</button>
-  </div>
-
-  <div class="warn-box" id="api-warning" style="display:none">
-    ⚠️ <a onclick="switchTab('settings')">설정</a>에서 Gemini API 키를 먼저 입력해 주세요.
-  </div>
-
-  <button class="analyze-btn" id="analyze-btn" onclick="analyzeWine()" disabled>
-    ✨ &nbsp; AI 소믈리에에게 분석 요청
-  </button>
-
-  <div class="loading" id="loading">
-    <span class="wine-glass-loader">🍷</span>
-    <p>소믈리에 AI가 라벨을 감정하고 있습니다...</p>
-  </div>
-
-  <div class="error-box" id="error-box"></div>
-
-  <div class="result-card" id="result-card">
-    <div class="r-header">
-      <div class="r-header-top">
-        <div>
-          <div class="wine-name" id="r-name">—</div>
-          <div class="wine-producer" id="r-producer">—</div>
-        </div>
-        <button class="share-btn" onclick="shareResult()">🔗 공유</button>
-      </div>
-      <div class="r-tags" id="r-tags"></div>
+<div class="app">
+  <!-- 헤더 -->
+  <div class="header">
+    <div class="h-logo">
+      <span class="h-logo-icon">🍷</span>
+      <span class="h-logo-text">VINO</span>
     </div>
-    <div class="r-body">
-      <div class="info-grid" id="r-grid"></div>
-      <div class="sec-title">맛과 향</div>
-      <div class="taste-text" id="r-taste">—</div>
-      <div class="sec-title">음식 페어링</div>
-      <div class="pairing-list" id="r-pairing"></div>
-      <div class="sec-title">소믈리에 한마디</div>
-      <div class="summary-box" id="r-summary">—</div>
-      <div class="rate-section">
-        <div class="sec-title" style="margin-top:0">나의 평가</div>
-        <div class="star-row" id="star-row">
-          <span class="star" onclick="setStar(1)">★</span>
-          <span class="star" onclick="setStar(2)">★</span>
-          <span class="star" onclick="setStar(3)">★</span>
-          <span class="star" onclick="setStar(4)">★</span>
-          <span class="star" onclick="setStar(5)">★</span>
+    <button class="h-key-btn" id="hKeyBtn" onclick="showKeyModal()">
+      <span class="h-key-dot" id="hKeyDot"></span>
+      <span id="hKeyLabel">API 키 설정</span>
+    </button>
+  </div>
+
+  <!-- 페이지 컨테이너 -->
+  <div class="pages">
+
+    <!-- PAGE 1: 스캔 -->
+    <div class="page active" id="pg-scan">
+      <div class="scan-inner">
+        <div class="upload-zone" id="dropZone" onclick="document.getElementById('file-input').click()"
+          ondragover="e.preventDefault()" ondrop="onDrop(event)">
+          <span class="uz-icon">📸</span>
+          <div class="uz-t">라벨을 촬영하거나 사진을 올려주세요</div>
+          <div class="uz-s">카메라 · 갤러리 · 드래그앤드롭</div>
         </div>
-        <textarea class="memo-input" id="memo-input" placeholder="시음 메모를 남겨보세요 (향, 맛, 여운 등)"></textarea>
-        <button class="save-btn" onclick="saveDiary()">🔖 &nbsp;다이어리에 저장</button>
+        <input type="file" id="file-input" accept="image/*" capture="environment" onchange="handleFile(this)">
+        <div class="preview-wrap" id="previewWrap" style="display:none">
+          <img id="previewImg" alt="라벨">
+          <button class="preview-x" onclick="clearScan()">✕</button>
+        </div>
+        <button class="primary-btn" id="analyzeBtn" onclick="analyzeWine()" style="margin-bottom:12px" disabled>
+          ✨ &nbsp;AI 소믈리에에게 분석 요청
+        </button>
+        <div class="loading-box" id="scanLoading">
+          <span class="loading-wine">🍷</span>
+          <p>소믈리에 AI가 라벨을 감정 중입니다...</p>
+        </div>
+        <div class="err-box" id="scanErr"></div>
+        <!-- 결과 -->
+        <div class="result-wrap card" id="resultWrap">
+          <div class="r-hero">
+            <div class="r-top-row">
+              <div style="flex:1;min-width:0">
+                <div class="r-name" id="rName">—</div>
+                <div class="r-producer" id="rProducer">—</div>
+              </div>
+              <div class="r-score"><span class="r-score-n" id="rScore">—</span><span class="r-score-l">/ 100</span></div>
+            </div>
+            <div class="r-tags" id="rTags"></div>
+            <div class="r-act-row">
+              <button class="r-act" onclick="shareResult()">🔗 공유</button>
+              <button class="r-act" onclick="scrollToRate()">⭐ 평가</button>
+              <button class="r-act" onclick="saveDiary()">🔖 저장</button>
+            </div>
+          </div>
+          <div class="r-itabs" id="rItabs">
+            <button class="r-itab active" onclick="switchRTab('info',this)">기본 정보</button>
+            <button class="r-itab" onclick="switchRTab('taste',this)">맛 프로필</button>
+            <button class="r-itab" onclick="switchRTab('pairing',this)">페어링</button>
+            <button class="r-itab" onclick="switchRTab('rec',this)">추천 와인</button>
+          </div>
+          <!-- 기본 정보 -->
+          <div class="r-panel active" id="rp-info">
+            <div class="info-grid">
+              <div class="ic"><div class="ic-l">📍 원산지</div><div class="ic-v" id="ri-origin">—</div></div>
+              <div class="ic"><div class="ic-l">🍇 품종</div><div class="ic-v" id="ri-grape">—</div></div>
+              <div class="ic"><div class="ic-l">📅 빈티지</div><div class="ic-v" id="ri-vintage">—</div></div>
+              <div class="ic"><div class="ic-l">💧 도수</div><div class="ic-v" id="ri-alcohol">—</div></div>
+              <div class="ic"><div class="ic-l">🌡️ 음용 온도</div><div class="ic-v" id="ri-temp">—</div></div>
+              <div class="ic"><div class="ic-l">⏳ 디캔팅</div><div class="ic-v" id="ri-decant">—</div></div>
+              <div class="ic span2"><div class="ic-l">💰 예상 가격</div><div class="ic-v" id="ri-price">—</div></div>
+            </div>
+            <div class="sec-title">수상 이력 / 평론가 점수</div>
+            <div class="expert-box" id="ri-awards">—</div>
+          </div>
+          <!-- 맛 프로필 -->
+          <div class="r-panel" id="rp-taste">
+            <div class="sec-title" style="margin-bottom:14px">맛 게이지</div>
+            <div class="gauge-list" id="gaugeList" style="margin-bottom:20px"></div>
+            <div class="sec-title">소믈리에 테이스팅 노트</div>
+            <div class="expert-box"><div class="expert-label">🎓 전문가 분석</div><div id="rt-expert">—</div></div>
+            <div class="beginner-box"><div class="beginner-label">💬 쉬운 설명</div><div id="rt-beginner">—</div></div>
+          </div>
+          <!-- 페어링 -->
+          <div class="r-panel" id="rp-pairing">
+            <div class="sec-title">추천 음식 페어링</div>
+            <div class="pairing-grid" id="rPairing" style="margin-bottom:16px"></div>
+            <div class="sec-title">피해야 할 음식</div>
+            <div class="expert-box" id="rAvoid" style="margin-bottom:12px">—</div>
+            <div class="sec-title">즐기는 방법</div>
+            <div class="beginner-box" id="rHowto">—</div>
+          </div>
+          <!-- 추천 와인 -->
+          <div class="r-panel" id="rp-rec">
+            <div class="sec-title">비슷한 스타일</div>
+            <div class="rec-list" id="rSimilar" style="margin-bottom:16px"></div>
+            <div class="sec-title">가격대별 대안</div>
+            <div class="rec-list" id="rAlt"></div>
+          </div>
+          <!-- 평가 -->
+          <div class="rate-box" id="rateBox">
+            <div class="sec-title" style="margin-bottom:6px">나의 시음 평가</div>
+            <div class="star-row">
+              <span class="star" onclick="setStar(1)">★</span>
+              <span class="star" onclick="setStar(2)">★</span>
+              <span class="star" onclick="setStar(3)">★</span>
+              <span class="star" onclick="setStar(4)">★</span>
+              <span class="star" onclick="setStar(5)">★</span>
+              <span class="star-lbl" id="starLbl"></span>
+            </div>
+            <textarea class="memo-ta" id="memoTa" placeholder="시음 메모 (향, 맛, 여운, 분위기...)"></textarea>
+            <button class="gold-btn" style="width:100%;margin-top:10px" onclick="saveDiary()">🔖 다이어리에 저장</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 2: 와인 검색 -->
+    <div class="page" id="pg-search">
+      <div class="search-inner">
+        <div class="search-bar">
+          <input class="search-input" id="searchInput" type="text"
+            placeholder="와인명, 생산자, 지역으로 검색..." 
+            onkeydown="if(event.key==='Enter')searchWine()">
+          <button class="search-btn" onclick="searchWine()">🔍</button>
+        </div>
+        <div class="search-hint" id="searchHint">
+          <span class="search-hint-icon">🔍</span>
+          <p>와인 이름이나 생산자를 검색하면<br>AI 소믈리에가 상세 정보를 제공합니다</p>
+          <small>예) Tignanello · Chateau Margaux · 세나</small>
+        </div>
+        <div id="searchLoading" style="display:none;text-align:center;padding:2rem">
+          <span class="loading-wine" style="display:block;font-size:34px;margin-bottom:.5rem">🍷</span>
+          <p style="font-size:13px;color:var(--text2)">검색 중...</p>
+        </div>
+        <div class="search-result-list" id="searchResults"></div>
+      </div>
+    </div>
+
+    <!-- PAGE 3: 메뉴 추천 -->
+    <div class="page" id="pg-menu">
+      <div class="menu-inner">
+        <div class="menu-desc">
+          🍽️ 오늘 드실 음식을 입력하면 AI 소믈리에가 가장 잘 어울리는 와인 3종을 추천해 드립니다.
+        </div>
+        <textarea class="menu-ta" id="menuTa"
+          placeholder="예) 소고기 안심 스테이크, 트러플 소스&#10;예) 해산물 파스타, 봉골레&#10;예) 치즈 플래터, 브리치즈 위주"></textarea>
+        <button class="primary-btn" id="menuBtn" onclick="recommendWine()" style="margin-bottom:16px">
+          🍷 &nbsp;어울리는 와인 추천받기
+        </button>
+        <div class="menu-loading" id="menuLoading">
+          <span class="loading-wine" style="display:block;font-size:34px;margin-bottom:.5rem">🍷</span>
+          <p style="font-size:13px;color:var(--text2)">최적의 와인을 찾고 있습니다...</p>
+        </div>
+        <div class="menu-results" id="menuResults"></div>
+      </div>
+    </div>
+
+    <!-- PAGE 4: 다이어리 -->
+    <div class="page" id="pg-diary">
+      <div class="diary-inner">
+        <div class="diary-stats-row" id="diaryStats"></div>
+        <div class="diary-toolbar">
+          <span class="diary-toolbar-l" id="diaryCount">0개 기록</span>
+          <select class="sort-sel" id="sortSel" onchange="renderDiary()">
+            <option value="date">최신순</option>
+            <option value="rating">평점순</option>
+            <option value="name">이름순</option>
+          </select>
+        </div>
+        <div id="diaryContent"></div>
+      </div>
+    </div>
+
+    <!-- PAGE 5: 설정 -->
+    <div class="page" id="pg-settings">
+      <div class="settings-inner">
+        <!-- API 연결 -->
+        <div class="sg">
+          <div class="sg-title">API 연결</div>
+          <div class="sg-card">
+            <div class="sg-row">
+              <div><div class="sg-row-l">Gemini API 키</div><div class="sg-row-s" id="keyStatusSub">미설정</div></div>
+              <span class="status-chip" id="keyBadge">미연결</span>
+            </div>
+            <div class="api-form">
+              <div class="api-row">
+                <input type="password" class="api-inp" id="apiInp" placeholder="AI Studio 발급 키 입력">
+                <button class="eye-btn" id="eyeBtn" onclick="toggleVis('apiInp','eyeBtn')">👁</button>
+              </div>
+              <button class="primary-btn" onclick="saveApiKey()" style="font-size:13px;padding:11px">저장 및 연결</button>
+              <div class="api-help">
+                🔗 <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a> 에서 무료 발급<br>
+                ⚡ 한 번 저장하면 이후 자동 연결됩니다<br>
+                🔒 키는 이 기기에만 저장, 외부 전송 없음
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 사용 현황 -->
+        <div class="sg">
+          <div class="sg-title">사용 현황</div>
+          <div class="sg-card">
+            <div class="sg-row">
+              <div><div class="sg-row-l">무료 한도</div><div class="sg-row-s">Gemini Flash 기준</div></div>
+              <span class="status-chip chip-ok">1,500회/일</span>
+            </div>
+            <div class="sg-row">
+              <div><div class="sg-row-l">오늘 사용</div><div class="sg-row-s" id="todaySub">0회</div></div>
+              <span class="status-chip chip-info" id="todayBadge">0 / 1500</span>
+            </div>
+            <div class="sg-row">
+              <div><div class="sg-row-l">누적 분석</div></div>
+              <span class="status-chip chip-ok" id="totalBadge">0회</span>
+            </div>
+          </div>
+        </div>
+        <!-- 백업/복구 -->
+        <div class="sg">
+          <div class="sg-title">백업 / 복구</div>
+          <div class="sg-card">
+            <div class="sg-row">
+              <div>
+                <div class="sg-row-l">다이어리 데이터</div>
+                <div class="sg-row-s">JSON 파일로 내보내고 가져오기</div>
+              </div>
+            </div>
+            <div class="backup-row">
+              <button class="backup-btn export-btn" onclick="exportData()">📤 내보내기</button>
+              <button class="backup-btn import-btn" onclick="document.getElementById('import-file').click()">📥 가져오기</button>
+              <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)">
+            </div>
+          </div>
+        </div>
+        <!-- 데이터 관리 -->
+        <div class="sg">
+          <div class="sg-title">데이터 관리</div>
+          <div class="sg-card">
+            <div class="sg-pad">
+              <button class="danger-btn" onclick="clearAll()">⚠️ 전체 데이터 초기화</button>
+            </div>
+          </div>
+        </div>
+        <div style="text-align:center;font-size:11px;color:var(--text4);margin-top:1rem;padding-bottom:.5rem">
+          VINO v3.0 · AI Wine Sommelier
+        </div>
       </div>
     </div>
   </div>
+
+  <!-- 바텀 탭 -->
+  <nav class="bottom-tab">
+    <button class="bt-btn active" onclick="goPage('scan',this)">
+      <span class="bt-icon">📷</span><span class="bt-label">스캔</span>
+    </button>
+    <button class="bt-btn" onclick="goPage('search',this)">
+      <span class="bt-icon">🔍</span><span class="bt-label">검색</span>
+    </button>
+    <button class="bt-btn" onclick="goPage('menu',this)">
+      <span class="bt-icon">🍽️</span><span class="bt-label">메뉴 추천</span>
+    </button>
+    <button class="bt-btn" onclick="goPage('diary',this)">
+      <span class="bt-icon">📖</span><span class="bt-label">다이어리</span>
+      <span class="bt-badge" id="diaryBadge"></span>
+    </button>
+    <button class="bt-btn" onclick="goPage('settings',this)">
+      <span class="bt-icon">⚙️</span><span class="bt-label">설정</span>
+    </button>
+  </nav>
 </div>
 
-<!-- 다이어리 탭 -->
-<div id="tab-diary" class="section">
-  <div id="diary-content"></div>
-</div>
-
-<!-- 설정 탭 -->
-<div id="tab-settings" class="section">
-  <div class="settings-card">
-    <h3>🔑 Gemini API 키</h3>
-    <p>
-      <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>에서 무료로 발급하세요.<br>
-      키는 이 기기 브라우저에만 저장되며 외부로 전송되지 않습니다.
-    </p>
+<!-- API 키 모달 -->
+<div class="key-modal" id="keyModal" onclick="if(event.target===this)hideKeyModal()">
+  <div class="key-sheet">
+    <div class="key-modal-title">🔑 API 키 설정</div>
+    <div class="key-modal-sub">
+      <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>에서 무료 발급 후 입력하세요.<br>
+      한 번 저장하면 이후 자동 연결됩니다.
+    </div>
     <div class="api-row">
-      <input type="password" class="api-input" id="api-key-input" placeholder="AI Studio에서 발급받은 API 키 입력">
-      <button class="eye-btn" onclick="toggleVis()" id="eye-btn">👁</button>
+      <input type="password" class="api-inp" id="modalApiInp" placeholder="AI Studio 발급 키">
+      <button class="eye-btn" id="modalEyeBtn" onclick="toggleVis('modalApiInp','modalEyeBtn')">👁</button>
     </div>
-    <button class="save-key-btn" onclick="saveApiKey()">저장하기</button>
+    <button class="primary-btn" onclick="saveApiKeyModal()" style="font-size:14px;padding:13px;margin-top:10px">저장 및 연결</button>
   </div>
-  <div class="settings-card">
-    <h3>ℹ️ 이용 안내</h3>
-    <ul class="info-list">
-      <li>무료 한도 — Gemini Flash 기준 하루 <strong style="color:var(--gold)">1,500회</strong></li>
-      <li>이미지는 Google Gemini API로 전송되어 분석됩니다</li>
-      <li>다이어리 데이터는 이 기기 브라우저에만 저장됩니다</li>
-      <li>라벨 정면이 선명하게 보일수록 분석 정확도가 높습니다</li>
-      <li>모바일에서 LTE/5G 연결 권장 (회사망 차단 우회)</li>
-    </ul>
+</div>
+
+<!-- 와인 검색 상세 모달 -->
+<div class="detail-modal" id="detailModal" onclick="if(event.target===this)hideDetailModal()">
+  <div class="detail-sheet" id="detailSheet">
+    <div class="detail-handle"></div>
+    <div class="detail-header">
+      <span class="detail-title" id="detailTitle">와인 상세</span>
+      <button class="detail-close" onclick="hideDetailModal()">✕</button>
+    </div>
+    <div class="detail-body" id="detailBody"></div>
   </div>
-  <button class="clear-btn" onclick="clearAll()">⚠️ 전체 데이터 초기화</button>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-let currentRating=0,currentData=null,currentB64=null;
+/* ══════════════════════════════════
+   상태
+══════════════════════════════════ */
+let scanRating=0, scanData=null, scanB64=null;
+let detailData=null, detailRating=0;
+const STAR_LABELS=['','별로예요','그저 그래요','괜찮아요','좋아요','최고예요!'];
+const TYPE_COLORS={
+  '레드':{c:'#e07888',b:'rgba(224,120,136,.12)'},
+  '화이트':{c:'#c9a84c',b:'rgba(201,168,76,.12)'},
+  '로제':{c:'#f0a0b0',b:'rgba(240,160,176,.12)'},
+  '스파클링':{c:'#80b8e0',b:'rgba(128,184,224,.12)'},
+  '주정강화':{c:'#c08040',b:'rgba(192,128,64,.12)'},
+  '기타':{c:'#a09080',b:'rgba(160,144,128,.1)'}
+};
 
-function switchTab(t){
-  ['scan','diary','settings'].forEach((n,i)=>{
-    document.querySelectorAll('.tab-btn')[i].classList.toggle('active',n===t);
-    document.getElementById('tab-'+n).classList.toggle('active',n===t);
-  });
-  if(t==='diary') renderDiary();
+/* ══════════════════════════════════
+   초기화
+══════════════════════════════════ */
+window.addEventListener('load',()=>{
+  setTimeout(()=>document.getElementById('splash').classList.add('hide'),1600);
+  const k=getKey();
+  if(k){
+    document.getElementById('apiInp').value=k;
+    document.getElementById('modalApiInp').value=k;
+    setKeyUI(true);
+  }
+  refreshDiaryBadge();
+  updateUsageUI();
+});
+
+/* ══════════════════════════════════
+   페이지 전환
+══════════════════════════════════ */
+function goPage(name,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.bt-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('pg-'+name).classList.add('active');
+  if(btn)btn.classList.add('active');
+  if(name==='diary')renderDiary();
 }
 
-function onDrop(e){e.preventDefault();const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))loadImage(f);}
-function handleFile(inp){if(inp.files[0])loadImage(inp.files[0]);}
-function loadImage(file){
-  const reader=new FileReader();
-  reader.onload=e=>{
-    currentB64=e.target.result.split(',')[1];
-    document.getElementById('preview-img').src=e.target.result;
-    document.getElementById('preview-box').style.display='block';
-    document.getElementById('drop-zone').style.display='none';
-    checkBtn();
-  };
-  reader.readAsDataURL(file);
-}
-function clearImage(){
-  currentB64=null;
-  document.getElementById('preview-box').style.display='none';
-  document.getElementById('drop-zone').style.display='block';
-  document.getElementById('file-input').value='';
-  document.getElementById('result-card').style.display='none';
-  document.getElementById('error-box').style.display='none';
-  checkBtn();
-}
+/* ══════════════════════════════════
+   API 키
+══════════════════════════════════ */
 function getKey(){return localStorage.getItem('vino_key')||''}
+function setKeyUI(ok){
+  const btn=document.getElementById('hKeyBtn');
+  const dot=document.getElementById('hKeyDot');
+  const lbl=document.getElementById('hKeyLabel');
+  const sub=document.getElementById('keyStatusSub');
+  const badge=document.getElementById('keyBadge');
+  btn.classList.toggle('ok',ok);
+  dot.style.background=ok?'var(--gold)':'var(--text4)';
+  dot.style.boxShadow=ok?'0 0 6px var(--gold)':'none';
+  lbl.textContent=ok?'연결됨':'API 키 설정';
+  if(sub)sub.textContent=ok?'정상 연결됨':'미설정';
+  if(badge){badge.textContent=ok?'연결됨':'미연결';badge.className='status-chip '+(ok?'chip-ok':'chip-err');}
+  checkAnalyzeBtn();
+}
 function saveApiKey(){
-  const k=document.getElementById('api-key-input').value.trim();
-  if(!k){showToast('API 키를 입력해주세요');return;}
+  const k=document.getElementById('apiInp').value.trim();
+  if(!k){toast('API 키를 입력해주세요');return;}
   localStorage.setItem('vino_key',k);
-  showToast('API 키가 저장되었습니다 ✓');
-  checkBtn();
+  document.getElementById('modalApiInp').value=k;
+  setKeyUI(true);toast('API 키가 저장되었습니다 ✓');
 }
-function toggleVis(){
-  const inp=document.getElementById('api-key-input'),btn=document.getElementById('eye-btn');
-  if(inp.type==='password'){inp.type='text';btn.textContent='🙈';}
-  else{inp.type='password';btn.textContent='👁';}
+function saveApiKeyModal(){
+  const k=document.getElementById('modalApiInp').value.trim();
+  if(!k){toast('API 키를 입력해주세요');return;}
+  localStorage.setItem('vino_key',k);
+  document.getElementById('apiInp').value=k;
+  setKeyUI(true);hideKeyModal();toast('연결되었습니다 ✓');
 }
-function checkBtn(){
-  const hasImg=!!currentB64,hasKey=!!getKey();
-  document.getElementById('analyze-btn').disabled=!hasImg;
-  document.getElementById('api-warning').style.display=(hasImg&&!hasKey)?'block':'none';
+function showKeyModal(){document.getElementById('keyModal').classList.add('show')}
+function hideKeyModal(){document.getElementById('keyModal').classList.remove('show')}
+function toggleVis(inpId,btnId){
+  const inp=document.getElementById(inpId),btn=document.getElementById(btnId);
+  inp.type=inp.type==='password'?'text':'password';
+  btn.textContent=inp.type==='password'?'👁':'🙈';
 }
+
+/* ══════════════════════════════════
+   스캔 — 이미지
+══════════════════════════════════ */
+function onDrop(e){e.preventDefault();const f=e.dataTransfer?.files[0];if(f&&f.type.startsWith('image/'))loadImg(f);}
+function handleFile(inp){if(inp.files[0])loadImg(inp.files[0]);}
+function loadImg(file){
+  const r=new FileReader();
+  r.onload=e=>{
+    scanB64=e.target.result.split(',')[1];
+    document.getElementById('previewImg').src=e.target.result;
+    document.getElementById('previewWrap').style.display='block';
+    document.getElementById('dropZone').style.display='none';
+    checkAnalyzeBtn();
+  };
+  r.readAsDataURL(file);
+}
+function clearScan(){
+  scanB64=null;
+  document.getElementById('previewWrap').style.display='none';
+  document.getElementById('dropZone').style.display='block';
+  document.getElementById('file-input').value='';
+  document.getElementById('resultWrap').style.display='none';
+  document.getElementById('scanErr').style.display='none';
+  checkAnalyzeBtn();
+}
+function checkAnalyzeBtn(){
+  document.getElementById('analyzeBtn').disabled=!scanB64||!getKey();
+}
+
+/* ══════════════════════════════════
+   스캔 — AI 분석
+══════════════════════════════════ */
+const SCAN_PROMPT=`당신은 세계 최고의 마스터 소믈리에입니다. 첨부 이미지의 와인 라벨을 심층 분석해 아래 JSON만 반환하세요. 마크다운 없이 순수 JSON만.
+{
+  "wine_name":"와인 풀네임","producer":"생산자/와이너리명","vintage":"생산연도(없으면 NV)",
+  "country":"생산국","region":"세부지역","grape":"포도품종(블렌드면 비율포함)",
+  "type":"레드/화이트/로제/스파클링/주정강화/기타 중 하나",
+  "alcohol":"알코올 도수","temperature":"추천 음용 온도","decanting":"디캔팅 권장여부 및 시간",
+  "price_range":"예상 가격대 원화","score":95,
+  "awards":"수상이력, 평론가 점수(없으면 공식기록 없음)",
+  "taste_profile":{"tannin":80,"acidity":60,"sweetness":20,"body":85,"finish":90},
+  "expert_note":"전문 소믈리에 테이스팅 노트 3~4문장(색상,향,맛,여운 순서)",
+  "beginner_note":"초보자도 이해하는 쉬운 설명 2문장(일상 비유 사용)",
+  "food_pairing":[{"food":"음식명","icon":"이모지","reason":"이유 한 줄"},{"food":"음식명","icon":"이모지","reason":"이유"},{"food":"음식명","icon":"이모지","reason":"이유"},{"food":"음식명","icon":"이모지","reason":"이유"}],
+  "avoid_food":"피해야 할 음식과 이유",
+  "how_to_enjoy":"가장 맛있게 즐기는 방법 2문장",
+  "similar_wines":[{"name":"와인명","producer":"생산자","reason":"유사이유","price":"가격대"},{"name":"와인명","producer":"생산자","reason":"유사이유","price":"가격대"}],
+  "alternative_wines":[{"name":"저가대안","producer":"생산자","reason":"이유","price":"가격대"},{"name":"고가업그레이드","producer":"생산자","reason":"이유","price":"가격대"}],
+  "error":null
+}
+와인 라벨 아니거나 인식불가시 error필드에 한국어 사유, 나머지 null.`;
 
 async function analyzeWine(){
   const key=getKey();
-  if(!key){switchTab('settings');return;}
-  if(!currentB64){showToast('이미지를 먼저 올려주세요');return;}
-  document.getElementById('loading').style.display='block';
-  document.getElementById('result-card').style.display='none';
-  document.getElementById('error-box').style.display='none';
-  document.getElementById('analyze-btn').disabled=true;
-
-  const prompt=`당신은 세계 최고의 소믈리에입니다. 첨부 이미지의 와인 라벨을 분석해 아래 JSON만 반환하세요. 마크다운 없이 순수 JSON만.
-
-{
-  "wine_name": "와인 풀네임",
-  "producer": "생산자 또는 와이너리명",
-  "vintage": "생산연도 (없으면 정보없음)",
-  "country": "생산국",
-  "region": "세부지역",
-  "grape": "포도품종",
-  "type": "레드/화이트/로제/스파클링/기타 중 하나",
-  "alcohol": "알코올 도수 (예: 13.5%)",
-  "taste": "맛과 향에 대한 2~3문장 (탄닌감, 산도, 바디감, 향 특성 포함, 한국어)",
-  "food_pairing": ["음식1", "음식2", "음식3"],
-  "temperature": "추천 음용 온도 (예: 16~18°C)",
-  "price_range": "예상 가격대 원화 (예: 3~5만원)",
-  "summary": "이 와인을 처음 접하는 사람에게 한 문장 소개 (한국어)",
-  "error": null
-}
-
-와인 라벨이 아니거나 인식 불가 시 error 필드에 한국어로 사유, 나머지 null.`;
-
+  if(!key){showKeyModal();return;}
+  if(!scanB64){toast('이미지를 먼저 올려주세요');return;}
+  document.getElementById('scanLoading').style.display='block';
+  document.getElementById('resultWrap').style.display='none';
+  document.getElementById('scanErr').style.display='none';
+  document.getElementById('analyzeBtn').disabled=true;
   try{
-    const res=await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
-      {method:'POST',headers:{'Content-Type':'application/json'},
-       body:JSON.stringify({
-         contents:[{parts:[
-           {inline_data:{mime_type:'image/jpeg',data:currentB64}},
-           {text:prompt}
-         ]}],
-         generationConfig:{temperature:0.2,maxOutputTokens:1024}
-       })}
-    );
-    if(!res.ok){const err=await res.json();throw new Error(err.error?.message||'HTTP '+res.status);}
-    const data=await res.json();
-    const raw=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
-    const wine=JSON.parse(raw.replace(/```json|```/g,'').trim());
-    if(wine.error){showErr('인식 실패: '+wine.error);return;}
-    currentData=wine;
-    renderResult(wine);
-  }catch(e){
-    if(e.message?.includes('API_KEY_INVALID')||e.message?.includes('INVALID_ARGUMENT'))
-      showErr('API 키가 올바르지 않습니다. 설정에서 다시 확인해 주세요.');
-    else if(e.message?.includes('RESOURCE_EXHAUSTED'))
-      showErr('오늘 무료 한도(1,500회)를 초과했습니다. 내일 다시 시도해 주세요.');
-    else showErr('분석 중 오류: '+e.message);
-  }finally{
-    document.getElementById('loading').style.display='none';
-    document.getElementById('analyze-btn').disabled=false;
-  }
+    const res=await callGemini([
+      {inline_data:{mime_type:'image/jpeg',data:scanB64}},{text:SCAN_PROMPT}
+    ],2048);
+    if(res.error){showScanErr('⚠️ '+res.error);return;}
+    scanData=res;renderScanResult(res);incUsage();
+  }catch(e){handleApiErr(e,'scanErr');}
+  finally{document.getElementById('scanLoading').style.display='none';document.getElementById('analyzeBtn').disabled=false;}
 }
 
-function renderResult(w){
-  document.getElementById('r-name').textContent=w.wine_name||'—';
-  document.getElementById('r-producer').textContent=w.producer||'—';
-  const tc={레드:{c:'#c96080',b:'rgba(201,96,128,.12)'},화이트:{c:'#c9a84c',b:'rgba(201,168,76,.12)'},
-    로제:{c:'#e08090',b:'rgba(224,128,144,.12)'},스파클링:{c:'#60a0c8',b:'rgba(96,160,200,.12)'},기타:{c:'#a09080',b:'rgba(160,144,128,.12)'}};
-  const t=tc[w.type]||tc['기타'];
+async function callGemini(parts,maxTokens=1024){
+  const key=getKey();
+  const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+    {method:'POST',headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({contents:[{parts}],generationConfig:{temperature:0.3,maxOutputTokens:maxTokens}})});
+  if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'HTTP '+res.status);}
+  const d=await res.json();
+  const raw=d.candidates?.[0]?.content?.parts?.[0]?.text||'';
+  return JSON.parse(raw.replace(/```json|```/g,'').trim());
+}
+
+function handleApiErr(e,errId){
+  let msg='오류: '+e.message;
+  if(e.message?.includes('API_KEY_INVALID')||e.message?.includes('INVALID_ARGUMENT'))
+    msg='🔑 API 키가 올바르지 않습니다. 상단 버튼을 눌러 다시 설정해 주세요.';
+  else if(e.message?.includes('RESOURCE_EXHAUSTED'))
+    msg='⏰ 오늘 무료 한도(1,500회)를 초과했습니다. 내일 다시 시도해 주세요.';
+  else if(e.message?.includes('high demand'))
+    msg='🔄 서버가 혼잡합니다. 1~2분 후 다시 시도해 주세요.';
+  const el=document.getElementById(errId);
+  if(el){el.textContent=msg;el.style.display='block';}
+  else toast(msg);
+}
+
+/* ══════════════════════════════════
+   스캔 — 결과 렌더링
+══════════════════════════════════ */
+function renderScanResult(w){
+  document.getElementById('rName').textContent=w.wine_name||'—';
+  document.getElementById('rProducer').textContent=w.producer||'—';
+  document.getElementById('rScore').textContent=w.score||'—';
+  const tc=TYPE_COLORS[w.type]||TYPE_COLORS['기타'];
   let tags='';
-  if(w.type)tags+=`<span class="tag" style="color:${t.c};border-color:${t.c};background:${t.b}">${w.type}</span>`;
-  if(w.vintage&&w.vintage!=='정보없음')tags+=`<span class="tag" style="color:var(--text2);border-color:var(--border2)">${w.vintage}</span>`;
+  if(w.type)tags+=`<span class="tag" style="color:${tc.c};border-color:${tc.c};background:${tc.b}">${w.type}</span>`;
+  if(w.vintage&&w.vintage!=='NV')tags+=`<span class="tag" style="color:var(--text2);border-color:var(--border2)">${w.vintage}</span>`;
   if(w.country)tags+=`<span class="tag" style="color:var(--text2);border-color:var(--border2)">📍 ${w.country}</span>`;
-  document.getElementById('r-tags').innerHTML=tags;
-  const cells=[{lbl:'지역',val:w.region||'—',icon:'🗺️'},{lbl:'품종',val:w.grape||'—',icon:'🍇'},
-    {lbl:'도수',val:w.alcohol||'—',icon:'💧'},{lbl:'음용 온도',val:w.temperature||'—',icon:'🌡️'},
-    {lbl:'예상 가격',val:w.price_range||'—',icon:'💰'}];
-  document.getElementById('r-grid').innerHTML=cells.map(c=>`<div class="info-cell"><div class="lbl">${c.icon} ${c.lbl}</div><div class="val">${c.val}</div></div>`).join('');
-  document.getElementById('r-taste').textContent=w.taste||'—';
-  const icons=['🥩','🐟','🧀','🥗','🍝','🍞','🍄','🦞'];
-  document.getElementById('r-pairing').innerHTML=(w.food_pairing||[]).map((f,i)=>`<div class="pairing-item"><span class="food-icon">${icons[i%icons.length]}</span>${f}</div>`).join('');
-  document.getElementById('r-summary').textContent=w.summary||'—';
-  currentRating=0;
+  if(w.region)tags+=`<span class="tag" style="color:var(--text3);border-color:var(--border)">${w.region}</span>`;
+  document.getElementById('rTags').innerHTML=tags;
+  document.getElementById('ri-origin').textContent=[w.country,w.region].filter(Boolean).join(' · ')||'—';
+  document.getElementById('ri-grape').textContent=w.grape||'—';
+  document.getElementById('ri-vintage').textContent=w.vintage||'—';
+  document.getElementById('ri-alcohol').textContent=w.alcohol||'—';
+  document.getElementById('ri-temp').textContent=w.temperature||'—';
+  document.getElementById('ri-decant').textContent=w.decanting||'—';
+  document.getElementById('ri-price').textContent=w.price_range||'—';
+  document.getElementById('ri-awards').textContent=w.awards||'—';
+  const gauges=[{l:'탄닌',k:'tannin'},{l:'산도',k:'acidity'},{l:'당도',k:'sweetness'},{l:'바디',k:'body'},{l:'여운',k:'finish'}];
+  const tp=w.taste_profile||{};
+  document.getElementById('gaugeList').innerHTML=gauges.map(g=>{
+    const v=tp[g.k]||0;
+    return `<div class="gauge-row"><span class="gauge-l">${g.l}</span><div class="gauge-track"><div class="gauge-fill" data-w="${v}" style="width:0%"></div></div><span class="gauge-v">${v}</span></div>`;
+  }).join('');
+  requestAnimationFrame(()=>{
+    document.querySelectorAll('.gauge-fill[data-w]').forEach(el=>{el.style.width=el.dataset.w+'%';});
+  });
+  document.getElementById('rt-expert').textContent=w.expert_note||'—';
+  document.getElementById('rt-beginner').textContent=w.beginner_note||'—';
+  document.getElementById('rPairing').innerHTML=(w.food_pairing||[]).map(f=>`
+    <div class="pair-item"><span class="pair-icon">${f.icon||'🍴'}</span>
+    <div class="pair-food">${f.food||f}</div>
+    ${f.reason?`<div class="pair-reason">${f.reason}</div>`:''}</div>`).join('');
+  document.getElementById('rAvoid').textContent=w.avoid_food||'—';
+  document.getElementById('rHowto').textContent=w.how_to_enjoy||'—';
+  const renderRecList=(id,arr)=>{
+    document.getElementById(id).innerHTML=(arr||[]).map(r=>`
+      <div class="rec-item"><div><div class="rec-name">${r.name}</div>
+      <div class="rec-sub">${r.producer} · ${r.reason}</div></div>
+      <span class="rec-price">${r.price||''}</span></div>`).join('');
+  };
+  renderRecList('rSimilar',w.similar_wines);
+  renderRecList('rAlt',w.alternative_wines);
+  scanRating=0;
   document.querySelectorAll('.star').forEach(s=>s.classList.remove('lit'));
-  document.getElementById('memo-input').value='';
-  document.getElementById('result-card').style.display='block';
-  document.getElementById('result-card').scrollIntoView({behavior:'smooth',block:'nearest'});
+  document.getElementById('starLbl').textContent='';
+  document.getElementById('memoTa').value='';
+  switchRTab('info',document.querySelector('.r-itab'));
+  document.getElementById('resultWrap').style.display='block';
+  setTimeout(()=>document.getElementById('resultWrap').scrollIntoView({behavior:'smooth',block:'nearest'}),100);
 }
 
+function switchRTab(name,btn){
+  document.querySelectorAll('.r-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.r-itab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('rp-'+name).classList.add('active');
+  if(btn)btn.classList.add('active');
+}
 function setStar(v){
-  currentRating=v;
+  scanRating=v;
   document.querySelectorAll('.star').forEach((s,i)=>s.classList.toggle('lit',i<v));
+  document.getElementById('starLbl').textContent=STAR_LABELS[v]||'';
 }
-function saveDiary(){
-  if(!currentData){showToast('분석 결과가 없습니다');return;}
-  const diary=JSON.parse(localStorage.getItem('vino_diary')||'[]');
-  diary.unshift({id:Date.now(),date:new Date().toLocaleDateString('ko-KR'),
-    data:currentData,rating:currentRating,
-    memo:document.getElementById('memo-input').value.trim(),
-    thumb:document.getElementById('preview-img').src});
-  localStorage.setItem('vino_diary',JSON.stringify(diary));
-  showToast('다이어리에 저장했습니다 🍷');
+function scrollToRate(){document.getElementById('rateBox').scrollIntoView({behavior:'smooth',block:'start'});}
+function showScanErr(msg){const el=document.getElementById('scanErr');el.textContent=msg;el.style.display='block';}
+
+/* ══════════════════════════════════
+   와인 검색
+══════════════════════════════════ */
+async function searchWine(){
+  const key=getKey();if(!key){showKeyModal();return;}
+  const q=document.getElementById('searchInput').value.trim();
+  if(!q){toast('검색어를 입력해주세요');return;}
+  document.getElementById('searchHint').style.display='none';
+  document.getElementById('searchLoading').style.display='block';
+  document.getElementById('searchResults').innerHTML='';
+  const prompt=`당신은 세계 최고의 마스터 소믈리에입니다.
+"${q}" 와인을 검색했습니다. 이 와인과 관련된 결과를 최대 4개 배열로 반환하세요.
+마크다운 없이 순수 JSON 배열만 반환하세요.
+[{
+  "wine_name":"와인 풀네임","producer":"생산자","vintage":"대표 빈티지 또는 NV",
+  "country":"국가","region":"지역","grape":"품종","type":"레드/화이트/로제/스파클링/주정강화/기타",
+  "score":95,"price_range":"가격대 원화",
+  "short_desc":"이 와인을 한 문장으로 설명",
+  "expert_note":"전문 테이스팅 노트 2~3문장",
+  "beginner_note":"초보자 설명 1~2문장",
+  "alcohol":"도수","temperature":"음용온도","decanting":"디캔팅",
+  "awards":"수상이력/평론가점수",
+  "taste_profile":{"tannin":80,"acidity":60,"sweetness":20,"body":85,"finish":90},
+  "food_pairing":[{"food":"음식","icon":"이모지","reason":"이유"},{"food":"음식","icon":"이모지","reason":"이유"},{"food":"음식","icon":"이모지","reason":"이유"}],
+  "avoid_food":"피해야할 음식",
+  "how_to_enjoy":"즐기는 방법",
+  "similar_wines":[{"name":"와인명","producer":"생산자","reason":"이유","price":"가격"}],
+  "alternative_wines":[{"name":"저가대안","producer":"생산자","reason":"이유","price":"가격"},{"name":"고가업그레이드","producer":"생산자","reason":"이유","price":"가격"}]
+}]
+검색어와 관련 없는 경우 빈 배열 [] 반환.`;
+  try{
+    const key=getKey();
+    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+      {method:'POST',headers:{'Content-Type':'application/json'},
+       body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.2,maxOutputTokens:2048}})});
+    const d=await res.json();
+    const raw=d.candidates?.[0]?.content?.parts?.[0]?.text||'[]';
+    const wines=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    renderSearchResults(wines);incUsage();
+  }catch(e){handleApiErr(e,'__toast');}
+  finally{document.getElementById('searchLoading').style.display='none';}
 }
-function renderDiary(){
-  const diary=JSON.parse(localStorage.getItem('vino_diary')||'[]');
-  const el=document.getElementById('diary-content');
-  if(!diary.length){
-    el.innerHTML=`<div class="diary-empty"><span class="de-icon">📖</span><p style="font-size:15px;font-weight:500;color:var(--text)">아직 기록된 와인이 없습니다</p><small style="font-size:12px;color:var(--text3);margin-top:8px;display:block;letter-spacing:.5px">스캔 후 평가를 남기면 여기에 쌓입니다</small></div>`;
+
+function renderSearchResults(wines){
+  const el=document.getElementById('searchResults');
+  if(!wines.length){
+    el.innerHTML=`<div class="search-hint"><span class="search-hint-icon">😔</span><p>검색 결과가 없습니다<br>다른 키워드로 검색해 보세요</p></div>`;
     return;
   }
-  el.innerHTML=`<div class="diary-count">총 ${diary.length}병 기록됨</div><div class="diary-grid">${
-    diary.map(e=>`<div class="diary-card">
-      <img class="diary-thumb" src="${e.thumb}" alt="${e.data.wine_name}" onerror="this.outerHTML='<div class=\\'diary-thumb-ph\\'>🍷</div>'">
-      <div class="diary-info">
-        <div class="diary-name">${e.data.wine_name||'이름 없음'}</div>
-        <div class="diary-meta">${e.data.producer||''} · ${e.date}</div>
-        <div class="diary-stars">${'★'.repeat(e.rating||0)}${'☆'.repeat(5-(e.rating||0))}</div>
-        ${e.memo?`<div class="diary-memo">"${e.memo}"</div>`:''}
+  el.innerHTML=wines.map((w,i)=>{
+    const tc=TYPE_COLORS[w.type]||TYPE_COLORS['기타'];
+    return `<div class="wine-result-card" onclick="showWineDetail(${i})">
+      <div class="wrc-inner">
+        <div class="wrc-top">
+          <div style="flex:1;min-width:0">
+            <div class="wrc-name">${w.wine_name}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">${w.producer}</div>
+          </div>
+          <div class="wrc-score"><span class="wrc-score-n">${w.score||'—'}</span><span class="wrc-score-l">/ 100</span></div>
+        </div>
+        <div class="wrc-tags">
+          <span class="tag" style="color:${tc.c};border-color:${tc.c};background:${tc.b}">${w.type||''}</span>
+          ${w.vintage&&w.vintage!=='NV'?`<span class="tag" style="color:var(--text2);border-color:var(--border2)">${w.vintage}</span>`:''}
+          ${w.country?`<span class="tag" style="color:var(--text2);border-color:var(--border2)">📍 ${w.country}</span>`:''}
+        </div>
+        <div class="wrc-desc">${w.short_desc||w.beginner_note||''}</div>
+        <div class="wrc-bottom">
+          <span class="wrc-price">💰 ${w.price_range||'—'}</span>
+          <button class="wrc-add-btn" onclick="event.stopPropagation();addSearchToDiary(${i})">+ 다이어리</button>
+        </div>
       </div>
-      <button class="del-btn" onclick="deleteDiary(${e.id})">🗑</button>
-    </div>`).join('')
-  }</div>`;
+    </div>`;
+  }).join('');
+  window._searchWines=wines;
 }
+
+function showWineDetail(idx){
+  const w=window._searchWines[idx];
+  if(!w)return;
+  detailData=w;detailRating=0;
+  document.getElementById('detailTitle').textContent=w.wine_name;
+  const tc=TYPE_COLORS[w.type]||TYPE_COLORS['기타'];
+  const gauges=[{l:'탄닌',k:'tannin'},{l:'산도',k:'acidity'},{l:'당도',k:'sweetness'},{l:'바디',k:'body'},{l:'여운',k:'finish'}];
+  const tp=w.taste_profile||{};
+  document.getElementById('detailBody').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px">
+      <div style="flex:1">
+        <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;background:linear-gradient(135deg,var(--text),#d0b888);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.3">${w.wine_name}</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:3px">${w.producer}</div>
+      </div>
+      <div class="r-score"><span class="r-score-n">${w.score||'—'}</span><span class="r-score-l">/ 100</span></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:16px">
+      <span class="tag" style="color:${tc.c};border-color:${tc.c};background:${tc.b}">${w.type||''}</span>
+      ${w.vintage&&w.vintage!=='NV'?`<span class="tag" style="color:var(--text2);border-color:var(--border2)">${w.vintage}</span>`:''}
+      ${w.country?`<span class="tag" style="color:var(--text2);border-color:var(--border2)">📍 ${w.country}</span>`:''}
+      ${w.region?`<span class="tag" style="color:var(--text3);border-color:var(--border)">${w.region}</span>`:''}
+    </div>
+    <div class="info-grid" style="margin-bottom:16px">
+      <div class="ic"><div class="ic-l">🍇 품종</div><div class="ic-v">${w.grape||'—'}</div></div>
+      <div class="ic"><div class="ic-l">💧 도수</div><div class="ic-v">${w.alcohol||'—'}</div></div>
+      <div class="ic"><div class="ic-l">🌡️ 온도</div><div class="ic-v">${w.temperature||'—'}</div></div>
+      <div class="ic"><div class="ic-l">⏳ 디캔팅</div><div class="ic-v">${w.decanting||'—'}</div></div>
+      <div class="ic span2"><div class="ic-l">💰 가격대</div><div class="ic-v">${w.price_range||'—'}</div></div>
+    </div>
+    <div class="sec-title">수상 / 평론가 점수</div>
+    <div class="expert-box" style="margin-bottom:16px">${w.awards||'—'}</div>
+    <div class="sec-title" style="margin-bottom:12px">맛 게이지</div>
+    <div class="gauge-list" style="margin-bottom:16px">
+      ${gauges.map(g=>{const v=tp[g.k]||0;return `<div class="gauge-row"><span class="gauge-l">${g.l}</span><div class="gauge-track"><div class="gauge-fill" data-w="${v}" style="width:0%"></div></div><span class="gauge-v">${v}</span></div>`;}).join('')}
+    </div>
+    <div class="sec-title">소믈리에 테이스팅 노트</div>
+    <div class="expert-box" style="margin-bottom:10px"><div class="expert-label">🎓 전문가 분석</div>${w.expert_note||'—'}</div>
+    <div class="beginner-box" style="margin-bottom:16px"><div class="beginner-label">💬 쉬운 설명</div>${w.beginner_note||'—'}</div>
+    <div class="sec-title">음식 페어링</div>
+    <div class="pairing-grid" style="margin-bottom:16px">
+      ${(w.food_pairing||[]).map(f=>`<div class="pair-item"><span class="pair-icon">${f.icon||'🍴'}</span><div class="pair-food">${f.food||f}</div>${f.reason?`<div class="pair-reason">${f.reason}</div>`:''}</div>`).join('')}
+    </div>
+    <div class="detail-rate-section">
+      <div class="sec-title" style="margin-bottom:6px">나의 평가</div>
+      <div class="star-row" id="detailStarRow">
+        ${[1,2,3,4,5].map(i=>`<span class="star" onclick="setDetailStar(${i})">★</span>`).join('')}
+        <span class="star-lbl" id="detailStarLbl"></span>
+      </div>
+      <textarea class="memo-ta" id="detailMemo" placeholder="시음 메모..."></textarea>
+      <button class="gold-btn" style="width:100%;margin-top:10px" onclick="saveDetailToDiary()">🔖 다이어리에 저장</button>
+    </div>`;
+  document.getElementById('detailModal').classList.add('show');
+  requestAnimationFrame(()=>{
+    document.querySelectorAll('#detailBody .gauge-fill[data-w]').forEach(el=>{el.style.width=el.dataset.w+'%';});
+  });
+}
+function hideDetailModal(){document.getElementById('detailModal').classList.remove('show');}
+function setDetailStar(v){
+  detailRating=v;
+  document.querySelectorAll('#detailStarRow .star').forEach((s,i)=>s.classList.toggle('lit',i<v));
+  document.getElementById('detailStarLbl').textContent=STAR_LABELS[v]||'';
+}
+function addSearchToDiary(idx){
+  const w=window._searchWines[idx];if(!w)return;
+  pushDiary({data:w,rating:0,memo:'',thumb:null,searchMode:true});
+  toast('다이어리에 저장했습니다 🍷');
+}
+function saveDetailToDiary(){
+  if(!detailData)return;
+  pushDiary({data:detailData,rating:detailRating,memo:document.getElementById('detailMemo').value.trim(),thumb:null,searchMode:true});
+  hideDetailModal();toast('다이어리에 저장했습니다 🍷');
+}
+
+/* ══════════════════════════════════
+   메뉴 추천
+══════════════════════════════════ */
+async function recommendWine(){
+  const key=getKey();if(!key){showKeyModal();return;}
+  const menu=document.getElementById('menuTa').value.trim();
+  if(!menu){toast('음식을 입력해주세요');return;}
+  document.getElementById('menuLoading').style.display='block';
+  document.getElementById('menuResults').style.display='none';
+  document.getElementById('menuBtn').disabled=true;
+  const prompt=`당신은 세계 최고의 마스터 소믈리에입니다.
+다음 음식에 어울리는 와인 3종을 추천해주세요: "${menu}"
+마크다운 없이 순수 JSON만 반환하세요.
+{"wines":[{"rank":1,"name":"와인명","producer":"생산자","type":"레드/화이트/로제/스파클링","grape":"품종","region":"지역","price":"예상가격 원화","match_reason":"이 음식과 어울리는 핵심 이유 2문장","description":"와인 특징 1문장","tip":"함께 즐기는 팁 1문장"}]}
+가격대를 저가~고가로 다양하게 선정하세요.`;
+  try{
+    const res=await callGemini([{text:prompt}],1024);
+    renderMenuResult((res.wines||[]));incUsage();
+  }catch(e){handleApiErr(e,'__toast');}
+  finally{document.getElementById('menuLoading').style.display='none';document.getElementById('menuBtn').disabled=false;}
+}
+
+function renderMenuResult(wines){
+  const RANK=['🥇 1순위 추천','🥈 2순위 추천','🥉 3순위 추천'];
+  const tc=TYPE_COLORS;
+  document.getElementById('menuResults').innerHTML=wines.map((w,i)=>{
+    const c=(tc[w.type]||tc['기타']).c;
+    return `<div class="menu-wine-card">
+      <div class="mwc-rank">${RANK[i]||''}</div>
+      <div class="mwc-name">${w.name}</div>
+      <div class="mwc-meta">
+        <span class="tag" style="color:${c};border-color:${c};background:${c}15;font-size:10px;padding:2px 8px">${w.type||''}</span>
+        &nbsp;${w.producer} · ${w.region} · ${w.grape}
+      </div>
+      <div class="mwc-reason">${w.match_reason}</div>
+      <div style="font-size:12px;color:var(--text3);font-style:italic;margin-bottom:10px">${w.description}</div>
+      <div style="font-size:12px;color:var(--text2);background:var(--dark4);border-radius:8px;padding:8px 10px;margin-bottom:10px">💡 ${w.tip}</div>
+      <div class="mwc-bottom"><span class="mwc-price">💰 ${w.price}</span></div>
+    </div>`;
+  }).join('');
+  document.getElementById('menuResults').style.display='block';
+}
+
+/* ══════════════════════════════════
+   다이어리
+══════════════════════════════════ */
+function getDiary(){return JSON.parse(localStorage.getItem('vino_diary')||'[]');}
+function saveDiaryData(arr){localStorage.setItem('vino_diary',JSON.stringify(arr));}
+
+function pushDiary(entry){
+  const arr=getDiary();
+  arr.unshift({id:Date.now(),date:new Date().toLocaleDateString('ko-KR'),...entry});
+  saveDiaryData(arr);refreshDiaryBadge();
+}
+
+function saveDiary(){
+  if(!scanData){toast('먼저 와인을 분석해주세요');return;}
+  pushDiary({data:scanData,rating:scanRating,
+    memo:document.getElementById('memoTa').value.trim(),
+    thumb:document.getElementById('previewImg').src,searchMode:false});
+  toast('다이어리에 저장했습니다 🍷');
+}
+
+function renderDiary(){
+  const arr=getDiary();
+  const sort=document.getElementById('sortSel').value;
+  const sorted=[...arr].sort((a,b)=>{
+    if(sort==='rating')return (b.rating||0)-(a.rating||0);
+    if(sort==='name')return (a.data?.wine_name||'').localeCompare(b.data?.wine_name||'');
+    return b.id-a.id;
+  });
+  const total=arr.length;
+  const rated=arr.filter(e=>e.rating>0);
+  const avg=rated.length?Math.round(rated.reduce((s,e)=>s+e.rating,0)/rated.length*10)/10:0;
+  const types=[...new Set(arr.map(e=>e.data?.type).filter(Boolean))].length;
+  document.getElementById('diaryStats').innerHTML=`
+    <div class="d-stat"><span class="d-stat-n">${total}</span><span class="d-stat-l">총 기록</span></div>
+    <div class="d-stat"><span class="d-stat-n">${avg||'—'}</span><span class="d-stat-l">평균 평점</span></div>
+    <div class="d-stat"><span class="d-stat-n">${types}</span><span class="d-stat-l">와인 종류</span></div>`;
+  document.getElementById('diaryCount').textContent=`${total}개 기록`;
+  if(!sorted.length){
+    document.getElementById('diaryContent').innerHTML=`<div class="diary-empty"><span class="diary-empty-icon">📖</span><p style="font-size:14px;font-weight:500;color:var(--text)">아직 기록된 와인이 없습니다</p><small style="font-size:12px;color:var(--text4);display:block;margin-top:6px">스캔하거나 검색해서 저장해보세요</small></div>`;
+    return;
+  }
+  document.getElementById('diaryContent').innerHTML=`<div class="diary-list">${
+    sorted.map(e=>`<div class="dc" onclick="showDiaryDetail(${e.id})">
+      <div class="dc-inner">
+        <div class="dc-thumb-wrap">
+          ${e.thumb
+            ?`<img class="dc-thumb" src="${e.thumb}" alt="${e.data?.wine_name||''}" onerror="this.outerHTML='<div class=\\'dc-thumb-ph\\'>🍷</div>'">`
+            :`<div class="dc-thumb-ph">🍷</div>`}
+        </div>
+        <div class="dc-info">
+          <div class="dc-name">${e.data?.wine_name||'이름 없음'}</div>
+          <div class="dc-sub">${[e.data?.producer,e.data?.vintage].filter(Boolean).join(' · ')||''}</div>
+          <div class="dc-bottom">
+            <span class="dc-stars">${'★'.repeat(e.rating||0)}${'☆'.repeat(5-(e.rating||0))}</span>
+            <span class="dc-date">${e.date}</span>
+          </div>
+          ${e.memo?`<div class="dc-memo">"${e.memo}"</div>`:''}
+        </div>
+        <button class="dc-del" onclick="event.stopPropagation();deleteDiary(${e.id})">🗑</button>
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+function showDiaryDetail(id){
+  const e=getDiary().find(x=>x.id===id);
+  if(!e)return;
+  detailData=e.data;detailRating=e.rating||0;
+  document.getElementById('detailTitle').textContent=e.data?.wine_name||'와인 상세';
+  const tc=TYPE_COLORS[e.data?.type]||TYPE_COLORS['기타'];
+  const tp=e.data?.taste_profile||{};
+  const gauges=[{l:'탄닌',k:'tannin'},{l:'산도',k:'acidity'},{l:'당도',k:'sweetness'},{l:'바디',k:'body'},{l:'여운',k:'finish'}];
+  document.getElementById('detailBody').innerHTML=`
+    <div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:12px">
+      <div style="flex:1"><div style="font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:var(--text)">${e.data?.wine_name||'—'}</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:3px">${e.data?.producer||''}</div></div>
+      <div class="r-score"><span class="r-score-n">${e.data?.score||'—'}</span><span class="r-score-l">/ 100</span></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:16px">
+      <span class="tag" style="color:${tc.c};border-color:${tc.c};background:${tc.b}">${e.data?.type||''}</span>
+      ${e.data?.vintage&&e.data.vintage!=='NV'?`<span class="tag" style="color:var(--text2);border-color:var(--border2)">${e.data.vintage}</span>`:''}
+    </div>
+    ${e.thumb?`<img src="${e.thumb}" style="width:100%;max-height:200px;object-fit:contain;border-radius:var(--radius);margin-bottom:16px;background:var(--dark4)" onerror="this.style.display='none'">`:''}
+    <div class="info-grid" style="margin-bottom:16px">
+      <div class="ic"><div class="ic-l">📍 원산지</div><div class="ic-v">${[e.data?.country,e.data?.region].filter(Boolean).join(' · ')||'—'}</div></div>
+      <div class="ic"><div class="ic-l">🍇 품종</div><div class="ic-v">${e.data?.grape||'—'}</div></div>
+      <div class="ic span2"><div class="ic-l">💰 가격대</div><div class="ic-v">${e.data?.price_range||'—'}</div></div>
+    </div>
+    <div class="sec-title" style="margin-bottom:12px">맛 게이지</div>
+    <div class="gauge-list" style="margin-bottom:16px">
+      ${gauges.map(g=>{const v=tp[g.k]||0;return `<div class="gauge-row"><span class="gauge-l">${g.l}</span><div class="gauge-track"><div class="gauge-fill" data-w="${v}" style="width:0%"></div></div><span class="gauge-v">${v}</span></div>`;}).join('')}
+    </div>
+    ${e.data?.expert_note?`<div class="expert-box" style="margin-bottom:10px"><div class="expert-label">🎓 소믈리에 노트</div>${e.data.expert_note}</div>`:''}
+    ${e.data?.beginner_note?`<div class="beginner-box" style="margin-bottom:16px"><div class="beginner-label">💬 쉬운 설명</div>${e.data.beginner_note}</div>`:''}
+    <div class="detail-rate-section">
+      <div class="sec-title" style="margin-bottom:6px">저장된 평가</div>
+      <div style="font-size:18px;color:var(--gold);margin-bottom:6px">${'★'.repeat(e.rating||0)}${'☆'.repeat(5-(e.rating||0))}</div>
+      ${e.memo?`<div style="font-size:13px;color:var(--text2);font-style:italic;background:var(--dark4);padding:10px 12px;border-radius:8px">"${e.memo}"</div>`:''}
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:8px">평가 수정</div>
+        <div class="star-row" id="detailStarRow">
+          ${[1,2,3,4,5].map(i=>`<span class="star${i<=(e.rating||0)?' lit':''}" onclick="setDetailStar(${i})">★</span>`).join('')}
+          <span class="star-lbl" id="detailStarLbl">${STAR_LABELS[e.rating||0]||''}</span>
+        </div>
+        <textarea class="memo-ta" id="detailMemo" placeholder="메모 수정...">${e.memo||''}</textarea>
+        <button class="gold-btn" style="width:100%;margin-top:10px" onclick="updateDiaryEntry(${e.id})">✏️ 수정 저장</button>
+      </div>
+    </div>`;
+  document.getElementById('detailModal').classList.add('show');
+  requestAnimationFrame(()=>{
+    document.querySelectorAll('#detailBody .gauge-fill[data-w]').forEach(el=>{el.style.width=el.dataset.w+'%';});
+  });
+}
+
+function updateDiaryEntry(id){
+  const arr=getDiary();
+  const idx=arr.findIndex(e=>e.id===id);
+  if(idx<0)return;
+  arr[idx].rating=detailRating;
+  arr[idx].memo=document.getElementById('detailMemo').value.trim();
+  saveDiaryData(arr);
+  hideDetailModal();renderDiary();toast('수정되었습니다 ✓');
+}
+
 function deleteDiary(id){
   if(!confirm('이 기록을 삭제할까요?'))return;
-  const diary=JSON.parse(localStorage.getItem('vino_diary')||'[]').filter(e=>e.id!==id);
-  localStorage.setItem('vino_diary',JSON.stringify(diary));
-  renderDiary();showToast('삭제했습니다');
+  saveDiaryData(getDiary().filter(e=>e.id!==id));
+  refreshDiaryBadge();renderDiary();toast('삭제했습니다');
 }
-function shareResult(){
-  if(!currentData)return;
-  const txt=`🍷 ${currentData.wine_name}\n📍 ${currentData.country||''} ${currentData.region||''}\n🍇 ${currentData.grape||''} | ${currentData.vintage||''}\n💰 ${currentData.price_range||''}\n\n"${currentData.summary||''}"\n\n#VINO #AI소믈리에 #와인`;
-  if(navigator.share)navigator.share({title:currentData.wine_name,text:txt}).catch(()=>{});
-  else navigator.clipboard.writeText(txt).then(()=>showToast('클립보드에 복사했습니다'));
+function refreshDiaryBadge(){
+  const n=getDiary().length;
+  const b=document.getElementById('diaryBadge');
+  if(n>0){b.textContent=n;b.style.display='block';}else b.style.display='none';
+}
+
+/* ══════════════════════════════════
+   백업 / 복구
+══════════════════════════════════ */
+function exportData(){
+  const data={diary:getDiary(),exportDate:new Date().toISOString(),version:'3.0'};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`vino_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();URL.revokeObjectURL(url);
+  toast('백업 파일을 저장했습니다 📤');
+}
+
+function importData(inp){
+  const file=inp.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.diary||!Array.isArray(data.diary))throw new Error('올바른 백업 파일이 아닙니다');
+      if(!confirm(`백업 파일에서 ${data.diary.length}개의 기록을 가져옵니다.\n현재 데이터와 합쳐집니다. 계속할까요?`))return;
+      const existing=getDiary();
+      const existIds=new Set(existing.map(e=>e.id));
+      const merged=[...existing,...data.diary.filter(e=>!existIds.has(e.id))];
+      merged.sort((a,b)=>b.id-a.id);
+      saveDiaryData(merged);
+      refreshDiaryBadge();renderDiary();
+      toast(`${data.diary.length}개 기록을 가져왔습니다 📥`);
+    }catch(err){toast('오류: '+err.message);}
+    inp.value='';
+  };
+  reader.readAsText(file);
+}
+
+/* ══════════════════════════════════
+   사용량 / 설정
+══════════════════════════════════ */
+function incUsage(){
+  const today=new Date().toDateString();
+  const u=JSON.parse(localStorage.getItem('vino_usage')||'{}');
+  if(u.date!==today){u.date=today;u.count=0;}
+  u.count++;u.total=(u.total||0)+1;
+  localStorage.setItem('vino_usage',JSON.stringify(u));
+  updateUsageUI();
+}
+function updateUsageUI(){
+  const today=new Date().toDateString();
+  const u=JSON.parse(localStorage.getItem('vino_usage')||'{}');
+  const tc=u.date===today?u.count||0:0;
+  const tot=u.total||0;
+  const sub=document.getElementById('todaySub');
+  const b=document.getElementById('todayBadge');
+  const tb=document.getElementById('totalBadge');
+  if(sub)sub.textContent=`${tc}회`;
+  if(b)b.textContent=`${tc} / 1500`;
+  if(tb)tb.textContent=`${tot}회`;
 }
 function clearAll(){
-  if(!confirm('저장된 모든 데이터를 삭제할까요?'))return;
-  localStorage.removeItem('vino_diary');localStorage.removeItem('vino_key');
-  document.getElementById('api-key-input').value='';
-  showToast('초기화 완료');
+  if(!confirm('저장된 모든 데이터를 삭제할까요?\n(백업 후 진행을 권장합니다)'))return;
+  ['vino_diary','vino_key','vino_usage'].forEach(k=>localStorage.removeItem(k));
+  document.getElementById('apiInp').value='';
+  document.getElementById('modalApiInp').value='';
+  setKeyUI(false);refreshDiaryBadge();renderDiary();toast('초기화 완료');
 }
-function showErr(msg){const el=document.getElementById('error-box');el.textContent=msg;el.style.display='block';}
-function showToast(msg){
-  const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');
-  setTimeout(()=>el.classList.remove('show'),2400);
+
+/* ══════════════════════════════════
+   공유 / 유틸
+══════════════════════════════════ */
+function shareResult(){
+  if(!scanData)return;
+  const txt=`🍷 ${scanData.wine_name}\n📍 ${[scanData.country,scanData.region].filter(Boolean).join(' · ')}\n🍇 ${scanData.grape||''} | ${scanData.vintage||''}\n⭐ ${scanData.score||'—'}/100점 | 💰 ${scanData.price_range||''}\n\n"${scanData.beginner_note||''}"\n\n#VINO #AI소믈리에 #와인`;
+  if(navigator.share)navigator.share({title:scanData.wine_name,text:txt}).catch(()=>{});
+  else navigator.clipboard.writeText(txt).then(()=>toast('클립보드에 복사했습니다'));
 }
-window.addEventListener('load',()=>{
-  const k=getKey();if(k)document.getElementById('api-key-input').value=k;checkBtn();
-});
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2500);
+}
 </script>
 </body>
 </html>
